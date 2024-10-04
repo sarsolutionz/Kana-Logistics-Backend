@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 
 from AdminApp.renderers import UserRenderer
-from AdminApp.serializers import SignUpSerializer, SignInSerializer, ProfileSerializer, ChangePasswordSerializer, ResetPasswordSerializer
+from AdminApp.serializers import SignUpSerializer, SignInSerializer, ProfileSerializer, ChangePasswordSerializer, PasswordResetEmailSerializer, PasswordResetSerializer
 
 # Creating tokens manually
 
@@ -74,11 +74,21 @@ class ChangePassword(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ResetPassword(APIView):
+class PasswordResetEmail(APIView):
     renderer_classes = [UserRenderer]
 
     def post(self, request, format=None):
-        serializer = ResetPasswordSerializer(data=request.data)
+        serializer = PasswordResetEmailSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             return Response({"msg": "Password Reset link send. Please check your Email"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordReset(APIView):
+    renderer_classes = [UserRenderer]
+
+    def post(self, request, uid, token, format=None):
+        serializer = PasswordResetSerializer(data=request.data, context={"uid": uid, "token": token})
+        if serializer.is_valid(raise_exception=True):
+            return Response({"msg": "Password Reset Successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

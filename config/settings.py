@@ -139,6 +139,8 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
+PASSWORD_RESET_TIMEOUT = 900    # 15 min timeout
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
