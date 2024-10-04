@@ -139,6 +139,15 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
+# Email Configuration
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = config("EMAIL_HOST_USER") #sender's email-id
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD") #password associated with above email-id (not the regular password)
+EMAIL_USE_TLS = True
+
 PASSWORD_RESET_TIMEOUT = 900    # 15 min timeout
 
 # Internationalization

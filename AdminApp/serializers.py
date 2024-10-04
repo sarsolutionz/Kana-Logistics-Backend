@@ -5,6 +5,8 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 
+from AdminApp.utils import Util
+
 # Create your serializers here.
 
 
@@ -82,12 +84,15 @@ class PasswordResetEmailSerializer(serializers.Serializer):
             uid = urlsafe_base64_encode(force_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
             link = "http://127.0.0.1:8000/api/user/reset/"+ uid + "/" + token
-            print(link)
-            # TODO: send email
+            data = {
+                "subject": "Reset Your Password",
+                "body": "Click Following Link to Reset Your Password: " + link,
+                "to_email": user.email
+            }
+            Util.send_email(data=data)            
             return attrs
         else:
             raise serializers.ValidationError({"User": "Invalid credentials."})
-        # return attrs
 
 class PasswordResetSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=15, min_length=8, style={
