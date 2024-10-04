@@ -1,10 +1,14 @@
-from rest_framework import serializers
 from AdminApp.models import User
+from rest_framework import serializers
+
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 
 # Create your serializers here.
 
 
-class UserSignUpSerializer(serializers.ModelSerializer):
+class SignUpSerializer(serializers.ModelSerializer):
     # We are writing this bcz we need confirm passwd field in our SignUp Request
     password2 = serializers.CharField(
         style={'input_type': 'password'}, write_only=True)
@@ -14,7 +18,7 @@ class UserSignUpSerializer(serializers.ModelSerializer):
         fields = ["email", "name", "password", "password2"]
         extra_kwargs = {'password': {'write_only': True}}
 
-    # Validation of password & confirm password while UserSignUp
+    # Validation of password & confirm password while SignUp
     def validate(self, attrs):
         password = attrs.get("password")
         password2 = attrs.get("password2")
@@ -29,7 +33,7 @@ class UserSignUpSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class UserSignInSerializer(serializers.ModelSerializer):
+class SignInSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255)
 
     class Meta:
@@ -37,13 +41,13 @@ class UserSignInSerializer(serializers.ModelSerializer):
         fields = ["email", "password"]
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "email", "name", "is_active", "is_admin"]
 
 
-class UserChangePasswordSerializer(serializers.Serializer):
+class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=15, min_length=8, style={
                                      'input_type': 'password'}, write_only=True)
     password2 = serializers.CharField(max_length=15, min_length=8, style={
@@ -63,3 +67,23 @@ class UserChangePasswordSerializer(serializers.Serializer):
         user.set_password(password)
         user.save()
         return attrs
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=255)
+
+    class Meta:
+        fields = ["email"]
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        if User.objects.filter(email=email).exists():
+            user = User.objects.get(email=email)
+            uid = urlsafe_base64_encode(force_bytes(user.id))
+            token = PasswordResetTokenGenerator().make_token(user)
+            link = "http://127.0.0.1:8000/api/user/reset/"+ uid + "/" + token
+            # TODO: send email
+            return attrs
+        else:
+            raise serializers.ValidationError({"User": "Invalid credentials."})
+        # return attrs
