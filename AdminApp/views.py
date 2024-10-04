@@ -4,12 +4,14 @@ from rest_framework.views import APIView
 
 from django.contrib.auth import authenticate
 
+from AdminApp.renderers import UserRenderer
 from AdminApp.serializers import UserSignUpSerializer, UserSignInSerializer
 
 # Create your views here.
 
-
 class UserSignUp(APIView):
+    renderer_classes = [UserRenderer]
+
     def post(self, request, format=None):
         serializer = UserSignUpSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -19,6 +21,8 @@ class UserSignUp(APIView):
 
 
 class UserSignIn(APIView):
+    renderer_classes = [UserRenderer]
+
     def post(self, request, format=None):
         serializer = UserSignInSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
