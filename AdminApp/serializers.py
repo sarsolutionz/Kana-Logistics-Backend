@@ -35,3 +35,7 @@ class UserSignInSerializer(serializers.ModelSerializer):
         model = User
         fields = ["email", "password"]
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "email", "name", "is_active", "is_admin"]
