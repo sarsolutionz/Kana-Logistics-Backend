@@ -26,7 +26,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         password2 = attrs.get("password2")
         if password != password2:
             raise serializers.ValidationError({
-                'auth_error': 'Passwords do not match. Please try again.'
+                'email': 'Passwords do not match. Please try again.'
             })
 
         return attrs
