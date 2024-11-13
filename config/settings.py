@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'AdminApp',
+    'MemberApp',
 ]
 
 MIDDLEWARE = [
@@ -220,6 +221,11 @@ LOGGING = {
             "propagate": True,
         },
         "UsersApp": {
+            "handlers": ["applog"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "MemberApp": {
             "handlers": ["applog"],
             "level": "INFO",
             "propagate": True,
