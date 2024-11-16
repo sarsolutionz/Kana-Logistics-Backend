@@ -10,6 +10,7 @@ class VehicleCapacity(models.Model):
         decimal_places=1,
         blank=True,
         validators=[MinValueValidator(0.1)],    # Ensure capacity is positive
+        unique=True,   
     )
 
     @property

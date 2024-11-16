@@ -3,7 +3,7 @@ import logging
 from rest_framework import serializers
 from .models import VehicleInfo, VehicleCapacity
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MinValueValidator
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -166,3 +166,42 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+class VehicleCapacitySerializer(serializers.Serializer):
+    # Use SerializerMethodField to return the actual capacity value
+    capacity = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VehicleInfo
+        fields = "__all__"
+
+    def validate_capacity(self, value):
+        if not VehicleCapacity.objects.filter(id=value.id).exists():
+            raise serializers.ValidationError("Selected capacity is invalid.")
+        return value
+    
+    def get_capacity(self, obj):
+        # Assuming 'capacity' is a related field with decimal values like 1.5, 2.5, etc.
+        if obj.capacity:
+            return {
+            "id": obj.id,  # Return the id of the related VehicleCapacity object
+            "capacity": f"{float(obj.capacity.capacity)} T.N"  # Add 'T.N' suffix to the capacity value
+        }
+        return None  
+
+class CreateVehicleCapacitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VehicleCapacity
+        fields = ['capacity']  # Include fields you want to expose via the API
+        extra_kwargs = {
+            'capacity': {'validators': [MinValueValidator(0.1)]}  # Optional: Ensure capacity is at least 0.1
+        }
+
+        def validate_capacity(self, value):
+            # Check if the capacity already exists in the database
+            if VehicleCapacity.objects.filter(capacity=value).exists():
+                raise serializers.ValidationError(f"Capacity {value} already exists.")
+            return value
+
+    def create(self, validated_data):
+        # You can perform custom logic during creation here, if needed
+        return super().create(validated_data)

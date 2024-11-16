@@ -6,15 +6,18 @@ from rest_framework.generics import RetrieveAPIView
 
 from AdminApp.renderers import UserRenderer
 
-from MemberApp.models import VehicleInfo
+from django.db import IntegrityError
 
-from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer
+from MemberApp.models import VehicleInfo, VehicleCapacity
+
+from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, CreateVehicleCapacitySerializer
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 # Create your views here.
+
 
 class CreateVehicleAPI(APIView):
     renderer_classes = [UserRenderer]
@@ -58,6 +61,7 @@ class GetByIdVehicleInfo(RetrieveAPIView):
         except VehicleInfo.DoesNotExist:
             return Response({"error": "Vehicle not found"}, status=404)
 
+
 class UpdateVehicleInfoByID(APIView):
     renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
@@ -66,7 +70,8 @@ class UpdateVehicleInfoByID(APIView):
         try:
             vehicle_id = request.query_params.get('vehicle_id', None)
             vehicle = VehicleInfo.objects.get(id=vehicle_id)
-            serializer = UpdateVehicleInfoByIDSerializer(vehicle, data=request.data, partial=False)
+            serializer = UpdateVehicleInfoByIDSerializer(
+                vehicle, data=request.data, partial=False)
 
             if serializer.is_valid():
                 serializer.save()
@@ -75,3 +80,37 @@ class UpdateVehicleInfoByID(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except VehicleInfo.DoesNotExist:
             return Response({"error": "Vehicle not found"}, status=404)
+
+
+class VehicleCapacityListView(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            capacities = VehicleInfo.objects.all()
+            serializer = VehicleCapacitySerializer(capacities, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+            return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CreateVehicleCapacityView(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = CreateVehicleCapacitySerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                # Save the new capacity instance
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except IntegrityError:
+                return Response({"error": "Capacity already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
