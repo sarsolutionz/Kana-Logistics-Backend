@@ -8,6 +8,7 @@ from django.core.validators import RegexValidator, MinValueValidator
 # Logger setup
 logger = logging.getLogger(__name__)
 
+
 class CreateVehicleInfoSerializer(serializers.ModelSerializer):
     # Adding RegexValidator directly to the vehicle_number field
     vehicle_number = serializers.CharField(
@@ -21,35 +22,43 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=255)
     number = serializers.CharField(max_length=255)
     address = serializers.CharField(max_length=255)
-    vehicle_type = serializers.ChoiceField(choices=[('open', 'Open'), ('close', 'Close')])
+    vehicle_type = serializers.ChoiceField(
+        choices=[('open', 'Open'), ('close', 'Close')])
     capacity = serializers.DecimalField(max_digits=4, decimal_places=1)
 
     class Meta:
         model = VehicleInfo
-        fields = ['model', 'name', 'number', 'address', 'vehicle_type', 'vehicle_number', 'capacity']
+        fields = ['model', 'name', 'number', 'address',
+                  'vehicle_type', 'vehicle_number', 'capacity']
 
     def validate(self, attrs):
         try:
             # Validate required fields
-            required_fields = ['model', 'capacity', 'name', 'number', 'vehicle_number', 'vehicle_type']
+            required_fields = ['model', 'capacity', 'name',
+                               'number', 'vehicle_number', 'vehicle_type']
             for field in required_fields:
                 if not attrs.get(field):
-                    raise serializers.ValidationError({field: "This field is required."})
+                    raise serializers.ValidationError(
+                        {field: "This field is required."})
 
             # Validate vehicle_number format
             vehicle_number = attrs.get('vehicle_number')
             if not vehicle_number:
-                raise serializers.ValidationError({'vehicle_number': 'Vehicle number is required.'})
+                raise serializers.ValidationError(
+                    {'vehicle_number': 'Vehicle number is required.'})
             if not self._validate_vehicle_number(vehicle_number):
-                raise serializers.ValidationError({'vehicle_number': 'Enter a valid vehicle number (e.g., GJ-05-ES-9658)'})
-            
+                raise serializers.ValidationError(
+                    {'vehicle_number': 'Enter a valid vehicle number (e.g., GJ-05-ES-9658)'})
+
             # Validate and associate capacity
             capacity_value = attrs.get('capacity')
             if capacity_value:
-                capacity_obj, created = VehicleCapacity.objects.get_or_create(capacity=capacity_value)
+                capacity_obj, created = VehicleCapacity.objects.get_or_create(
+                    capacity=capacity_value)
                 attrs['capacity'] = capacity_obj
             else:
-                raise serializers.ValidationError({'capacity': 'Capacity is required'})
+                raise serializers.ValidationError(
+                    {'capacity': 'Capacity is required'})
 
             return attrs
         except Exception as e:
@@ -81,14 +90,18 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
             instance.model = validated_data.get('model', instance.model)
             instance.name = validated_data.get('name', instance.name)
             instance.number = validated_data.get('number', instance.number)
-            instance.vehicle_number = validated_data.get('vehicle_number', instance.vehicle_number)
-            instance.vehicle_type = validated_data.get('vehicle_type', instance.vehicle_type)
-            instance.capacity = validated_data.get('capacity', instance.capacity)
+            instance.vehicle_number = validated_data.get(
+                'vehicle_number', instance.vehicle_number)
+            instance.vehicle_type = validated_data.get(
+                'vehicle_type', instance.vehicle_type)
+            instance.capacity = validated_data.get(
+                'capacity', instance.capacity)
             instance.save()
             return instance
         except Exception as e:
             logger.error(f"Error in updating vehicle: {e}")
             raise serializers.ValidationError({'error': str(e)})
+
 
 class GetAllVehicleInfoSerializer(serializers.ModelSerializer):
     # Use SerializerMethodField to return the actual capacity value
@@ -102,13 +115,14 @@ class GetAllVehicleInfoSerializer(serializers.ModelSerializer):
         if not VehicleCapacity.objects.filter(id=value.id).exists():
             raise serializers.ValidationError("Selected capacity is invalid.")
         return value
-    
+
     def get_capacity(self, obj):
         # Assuming 'capacity' is a related field with decimal values like 1.5, 2.5, etc.
         if obj.capacity:
-            return f"{float(obj.capacity.capacity)} T.N"  # Add 'T.N' to the capacity value
-        return None  
-    
+            # Add 'T.N' to the capacity value
+            return f"{float(obj.capacity.capacity)} T.N"
+        return None
+
 
 class GetByIdVehicleInfoSerializer(serializers.ModelSerializer):
     # Directly return the capacity as a decimal value
@@ -120,14 +134,17 @@ class GetByIdVehicleInfoSerializer(serializers.ModelSerializer):
 
     def get_capacity(self, obj):
         # Access the related capacity value and append ' T.N'
-        return f"{obj.capacity.capacity} T.N"  # Assuming capacity is a related model
-    
+        return float(obj.capacity.capacity)  # Assuming capacity is a related model
+
+
 class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
-    capacity = serializers.DecimalField(source='capacity.capacity', max_digits=4, decimal_places=1)
+    capacity = serializers.DecimalField(
+        source='capacity.capacity', max_digits=4, decimal_places=1)
 
     class Meta:
         model = VehicleInfo
-        fields = ['id', 'model', 'name', 'number', 'address', 'vehicle_type', 'vehicle_number', 'capacity']
+        fields = ['id', 'model', 'name', 'number', 'address',
+                  'vehicle_type', 'vehicle_number', 'capacity']
 
     def validate_vehicle_number(self, value):
         """
@@ -139,11 +156,13 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
         if vehicle_id:
             current_vehicle_number = self.instance.vehicle_number
             if current_vehicle_number != value and VehicleInfo.objects.filter(vehicle_number=value).exists():
-                raise serializers.ValidationError("Vehicle with this vehicle number already exists.")
+                raise serializers.ValidationError(
+                    "Vehicle with this vehicle number already exists.")
         else:
             # For new records, just check if vehicle_number is unique
             if VehicleInfo.objects.filter(vehicle_number=value).exists():
-                raise serializers.ValidationError("Vehicle with this vehicle number already exists.")
+                raise serializers.ValidationError(
+                    "Vehicle with this vehicle number already exists.")
 
         return value
 
@@ -152,11 +171,12 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
         Update the fields of the VehicleInfo model.
         """
         capacity_data = validated_data.pop('capacity', None)
-        
+
         # Handle the capacity update if it exists
         if capacity_data:
             capacity_value = capacity_data['capacity']
-            capacity_obj, created = VehicleCapacity.objects.get_or_create(capacity=capacity_value)
+            capacity_obj, created = VehicleCapacity.objects.get_or_create(
+                capacity=capacity_value)
             instance.capacity = capacity_obj
 
         # Update other fields
@@ -165,6 +185,7 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
 
 class VehicleCapacitySerializer(serializers.Serializer):
     # Use SerializerMethodField to return the actual capacity value
@@ -178,28 +199,32 @@ class VehicleCapacitySerializer(serializers.Serializer):
         if not VehicleCapacity.objects.filter(id=value.id).exists():
             raise serializers.ValidationError("Selected capacity is invalid.")
         return value
-    
+
     def get_capacity(self, obj):
         # Assuming 'capacity' is a related field with decimal values like 1.5, 2.5, etc.
         if obj.capacity:
             return {
-            "id": obj.id,  # Return the id of the related VehicleCapacity object
-            "capacity": f"{float(obj.capacity.capacity)} T.N"  # Add 'T.N' suffix to the capacity value
-        }
-        return None  
+                "id": obj.id,  # Return the id of the related VehicleCapacity object
+                # Add 'T.N' suffix to the capacity value
+                "capacity": f"{float(obj.capacity.capacity)} T.N"
+            }
+        return None
+
 
 class CreateVehicleCapacitySerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleCapacity
         fields = ['capacity']  # Include fields you want to expose via the API
         extra_kwargs = {
-            'capacity': {'validators': [MinValueValidator(0.1)]}  # Optional: Ensure capacity is at least 0.1
+            # Optional: Ensure capacity is at least 0.1
+            'capacity': {'validators': [MinValueValidator(0.1)]}
         }
 
         def validate_capacity(self, value):
             # Check if the capacity already exists in the database
             if VehicleCapacity.objects.filter(capacity=value).exists():
-                raise serializers.ValidationError(f"Capacity {value} already exists.")
+                raise serializers.ValidationError(
+                    f"Capacity {value} already exists.")
             return value
 
     def create(self, validated_data):
