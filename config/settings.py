@@ -89,25 +89,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_NAME = 'csrftoken'  # Ensure this matches your frontend's expectations
-CSRF_COOKIE_SECURE = True  # Use this if you're using HTTPS
-
-# CSRF trusted origins
-CSRF_TRUSTED_ORIGINS = [
-    'http://46.202.162.117',
-    'https://46.202.162.117',
-    'http://46.202.162.117:80'
-    # Add any other domains if needed
-]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://46.202.162.117:80",
-    "http://localhost:80",
-    "http://46.202.162.117:3000",
-    "http://localhost:3000",
-    "http://46.202.162.117",
+    "http://46.202.162.117:3000"
 ]
 
 # Setting this to True can be dangerous, as it allows any website to make cross-origin requests to yours
@@ -193,9 +180,6 @@ STATIC_ROOT = BASE_DIR / "static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
