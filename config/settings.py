@@ -93,6 +93,8 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://46.202.162.117:80"
+    "http://localhost:80"
 ]
 
 # Setting this to True can be dangerous, as it allows any website to make cross-origin requests to yours
