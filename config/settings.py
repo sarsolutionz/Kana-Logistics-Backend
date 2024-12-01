@@ -30,7 +30,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "46.202.162.117"]
+ALLOWED_HOSTS = ["46.202.162.117"]
 
 # Application definition
 
@@ -90,10 +90,8 @@ WSGI_APPLICATION = 'config.wsgi.application'
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://46.202.162.117:80",
     "http://46.202.162.117:3000"
+    "http://46.202.162.117:80",
 ]
 
 # Setting this to True can be dangerous, as it allows any website to make cross-origin requests to yours
