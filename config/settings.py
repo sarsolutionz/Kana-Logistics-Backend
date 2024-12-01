@@ -90,13 +90,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF trusted origins
+CSRF_TRUSTED_ORIGINS = [
+    'http://46.202.162.117',
+    'https://46.202.162.117',
+    # Add any other domains if needed
+]
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://46.202.162.117:80",
     "http://localhost:80",
     "http://46.202.162.117:3000",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "http://46.202.162.117",
 ]
 
 # Setting this to True can be dangerous, as it allows any website to make cross-origin requests to yours
