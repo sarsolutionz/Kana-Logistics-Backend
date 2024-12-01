@@ -92,7 +92,6 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://46.202.162.117:3000",
     "http://46.202.162.117:80",
-    "https://kana-logistics-63jd6pypc-sar-solutions-projects.vercel.app",
 ]
 
 
