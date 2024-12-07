@@ -35,7 +35,7 @@ class VehicleInfo(models.Model):
 
     name = models.CharField(max_length=200, blank=True)
 
-    number = models.CharField(max_length=15, blank=True)
+    number = models.CharField(max_length=15, blank=True, unique=True)
 
     address = models.CharField(max_length=1000, blank=True)
 
