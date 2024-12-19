@@ -152,19 +152,22 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
         """
         vehicle_id = self.instance.id if self.instance else None
 
-        # If vehicle_number is being updated, check if it's already taken by another vehicle
-        if vehicle_id:
-            current_vehicle_number = self.instance.vehicle_number
-            if current_vehicle_number != value and VehicleInfo.objects.filter(vehicle_number=value).exists():
-                raise serializers.ValidationError(
-                    "Vehicle with this vehicle number already exists.")
-        else:
-            # For new records, just check if vehicle_number is unique
-            if VehicleInfo.objects.filter(vehicle_number=value).exists():
-                raise serializers.ValidationError(
-                    "Vehicle with this vehicle number already exists.")
+        try:
+            # If vehicle_number is being updated, check if it's already taken by another vehicle
+            if vehicle_id:
+                current_vehicle_number = self.instance.vehicle_number
+                if current_vehicle_number != value and VehicleInfo.objects.filter(vehicle_number=value).exists():
+                    raise serializers.ValidationError(
+                        "Vehicle with this vehicle number already exists.")
+            else:
+                # For new records, just check if vehicle_number is unique
+                if VehicleInfo.objects.filter(vehicle_number=value).exists():
+                    raise serializers.ValidationError(
+                        "Vehicle with this vehicle number already exists.")
 
-        return value
+            return value
+        except Exception as e:
+            logger.error(f"Error in updating vehicle: {e}")
 
     def update(self, instance, validated_data):
         """
