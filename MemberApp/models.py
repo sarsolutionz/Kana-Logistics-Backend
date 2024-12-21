@@ -21,6 +21,9 @@ class VehicleCapacity(models.Model):
         return self.description
 
 
+class VehicleDocs(models.Model):
+    pass
+
 class VehicleInfo(models.Model):
     VEHICLE_TYPE_CHOICES = [
         ('', 'Select an option'),  # Placeholder option
@@ -35,7 +38,7 @@ class VehicleInfo(models.Model):
 
     name = models.CharField(max_length=200, blank=True)
 
-    number = models.CharField(max_length=15, blank=True, unique=True)
+    number = models.CharField(max_length=15, blank=True)
 
     address = models.CharField(max_length=1000, blank=True)
 
