@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 admin.site.site_title = "Kana Logistics"
 admin.site.site_header = "Kana Logistics SuperAdmin"
@@ -26,3 +28,8 @@ urlpatterns = [
     path('api/user/', include('AdminApp.urls')),
     path('api/member/', include('MemberApp.urls')),
 ]
+
+# Add the following lines to the bottom of the file
+
+if settings.DEBUG:
+    urlpatterns += (static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))

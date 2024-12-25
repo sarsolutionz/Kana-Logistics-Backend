@@ -1,9 +1,13 @@
 import re
 import logging
 from rest_framework import serializers
-from .models import VehicleInfo, VehicleCapacity
+from .models import VehicleInfo, VehicleCapacity, VehicleImage
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, MinValueValidator
+from PIL import Image
+import io
+from django.core.files.uploadedfile import InMemoryUploadedFile
+
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -134,7 +138,8 @@ class GetByIdVehicleInfoSerializer(serializers.ModelSerializer):
 
     def get_capacity(self, obj):
         # Access the related capacity value and append ' T.N'
-        return float(obj.capacity.capacity)  # Assuming capacity is a related model
+        # Assuming capacity is a related model
+        return float(obj.capacity.capacity)
 
 
 class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
@@ -233,3 +238,105 @@ class CreateVehicleCapacitySerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # You can perform custom logic during creation here, if needed
         return super().create(validated_data)
+
+
+class CreateDocumentSerializer(serializers.ModelSerializer):
+    """Serializer for creating multiple VehicleImage instances."""
+    
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True
+    )
+
+    class Meta:
+        model = VehicleImage
+        fields = ['vehicle', 'images', 'description']
+
+    def validate_images(self, value):
+        """Custom validation for multiple images."""
+        MAX_SIZE = 5 * 1024 * 1024  # 5MB
+        valid_extensions = ['.jpg', '.jpeg', '.png']
+        
+        for img in value:
+            # Check file size
+            if img.size > MAX_SIZE:
+                raise serializers.ValidationError(f"Image {img.name} size exceeds the 5MB limit.")
+            # Check file type
+            if not any(img.name.lower().endswith(ext) for ext in valid_extensions):
+                raise serializers.ValidationError(f"Invalid image format for {img.name}. Only JPG, JPEG, and PNG are allowed.")
+        
+        return value
+
+    def compress_image(self, img):
+        """Compress image by resizing if it's too large."""
+        max_width, max_height = 1200, 1200  # Max dimensions (change as needed)
+        img_width, img_height = img.size
+        
+        # If the image is larger than the max size, resize it
+        if img_width > max_width or img_height > max_height:
+            img.thumbnail((max_width, max_height))  # Maintain aspect ratio
+            
+        return img
+
+    def save_image(self, image):
+        """Compress and return the processed image."""
+        img = Image.open(image)
+        img_format = img.format  # Ensure the correct format for saving
+        img = self.compress_image(img)
+        
+        # Save the image back into a temporary file buffer
+        img_io = io.BytesIO()
+        img.save(img_io, format=img_format, quality=85)  # Adjust quality as needed
+        img_io.seek(0)
+        
+        # Create a new InMemoryUploadedFile with the compressed image data
+        return InMemoryUploadedFile(
+            img_io, None, image.name, image.content_type, img_io.getbuffer().nbytes, None
+        )
+
+    def create(self, validated_data):
+        """Handle creating multiple VehicleImage instances."""
+        vehicle = validated_data['vehicle']
+        description = validated_data.get('description', None)
+        images = validated_data.pop('images')
+
+        vehicle_images = []
+        for image in images:
+            compressed_image = self.save_image(image)
+            vehicle_images.append(
+                VehicleImage(vehicle=vehicle, image=compressed_image, description=description)
+            )
+        
+        # Bulk create all VehicleImage instances
+        return VehicleImage.objects.bulk_create(vehicle_images)
+
+class DeleteImageSerializer(serializers.Serializer):
+    """Serializer for deleting multiple VehicleImage instances."""
+    image_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True
+    )
+
+    def validate_image_ids(self, value):
+        """Validate that all provided IDs correspond to existing VehicleImage instances."""
+        if not value:
+            raise serializers.ValidationError("The list of image IDs cannot be empty.")
+
+        # Validate the existence of all images
+        invalid_ids = []
+        for image_id in value:
+            if not VehicleImage.objects.filter(id=image_id).exists():
+                invalid_ids.append(image_id)
+
+        if invalid_ids:
+            raise serializers.ValidationError(
+                f"The following image IDs are invalid or do not exist: {', '.join(map(str, invalid_ids))}"
+            )
+        
+        return value
+
+    def delete_images(self):
+        """Delete the images based on the validated IDs."""
+        image_ids = self.validated_data['image_ids']
+        deleted_count, _ = VehicleImage.objects.filter(id__in=image_ids).delete()
+        return deleted_count

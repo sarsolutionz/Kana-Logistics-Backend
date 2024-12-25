@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, RegexValidator
+import uuid
 
 # Create your models here.
 
@@ -20,9 +21,6 @@ class VehicleCapacity(models.Model):
     def __str__(self):
         return self.description
 
-
-class VehicleDocs(models.Model):
-    pass
 
 class VehicleInfo(models.Model):
     VEHICLE_TYPE_CHOICES = [
@@ -58,6 +56,7 @@ class VehicleInfo(models.Model):
         )],
     )
 
+
     class Meta:
         verbose_name = "Vehicle"
         verbose_name_plural = "Vehicles Info"
@@ -75,3 +74,38 @@ class VehicleInfo(models.Model):
             )
             self.capacity = capacity_obj
         super(VehicleInfo, self).save(*args, **kwargs)
+
+
+# New Image Model for Docs images
+def get_image_upload_path(instance, filename):
+    """Generate dynamic upload path for vehicle images."""
+    return f"docs/{instance.vehicle.id}/{filename}"
+
+
+class VehicleImage(models.Model):
+    """Model to store images for vehicles."""
+    
+    # UUID as primary key for the image
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    vehicle = models.ForeignKey(
+        'VehicleInfo',
+        related_name='images',
+        on_delete=models.CASCADE
+    )
+    image = models.ImageField(upload_to=get_image_upload_path, blank=False)
+    description = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = 'Vehicle Image'
+        verbose_name_plural = 'Vehicle Images'
+        ordering = ['vehicle']
+
+    def __str__(self):
+        """Return a string representation of the image."""
+        return f"Image ({self.id})"
+
+    def clean(self):
+        """Override the clean method to add custom validation if needed."""
+        # Add any custom validation for the description or image size if required
+        pass
