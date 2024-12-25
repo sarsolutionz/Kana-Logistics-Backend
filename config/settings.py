@@ -93,7 +93,9 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://46.202.162.117:3000",
     "http://46.202.162.117:80",
-    "https://kanalogistics.co"
+    "https://kanalogistics.co",
+    "https://kanalogistics.co:3000",
+    "https://kanalogistics.co:80",
 ]
 
 
