@@ -1,5 +1,5 @@
 from django.urls import path
-from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehicleInfo, UpdateVehicleInfoByID, VehicleCapacityListView, CreateVehicleCapacityView
+from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehicleInfo, UpdateVehicleInfoByID, VehicleCapacityListView, CreateVehicleCapacityView, VehicleImageUploadView
 
 urlpatterns = [
     #
@@ -21,4 +21,8 @@ urlpatterns = [
     #
     # create capacity
     path("create-capacity", CreateVehicleCapacityView.as_view(), name="create-vehicle"),
+    # 
+    # uplode image
+    path('upload-images/', VehicleImageUploadView.as_view(), name='upload-images'),
+
 ]

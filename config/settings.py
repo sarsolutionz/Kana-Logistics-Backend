@@ -92,6 +92,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://46.202.162.117:3000",
     "http://46.202.162.117:80",
+    "https://kanalogistics.co"
 ]
 
 
@@ -175,6 +176,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 STATIC_ROOT = BASE_DIR / "static/"
+
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = BASE_DIR / "media/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

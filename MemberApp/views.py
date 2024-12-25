@@ -10,7 +10,7 @@ from django.db import IntegrityError
 
 from MemberApp.models import VehicleInfo, VehicleCapacity
 
-from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, CreateVehicleCapacitySerializer
+from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, CreateVehicleCapacitySerializer, CreateDocumentSerializer
 
 import logging
 
@@ -113,4 +113,16 @@ class CreateVehicleCapacityView(APIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except IntegrityError:
                 return Response({"error": "Capacity already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# New API View for uploading multiple VehicleImage instances
+class VehicleImageUploadView(APIView):
+    """API View for uploading multiple VehicleImage instances."""
+
+    def post(self, request, *args, **kwargs):
+        serializer = CreateDocumentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Images uploaded successfully!"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
