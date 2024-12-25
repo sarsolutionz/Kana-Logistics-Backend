@@ -31,7 +31,7 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "46.202.162.117",
-                 "api.kanalogistics.co", "www.api.kanalogistics.co"]
+                 "http://api.kanalogistics.co", "http://www.api.kanalogistics.co"]
 
 # Application definition
 
