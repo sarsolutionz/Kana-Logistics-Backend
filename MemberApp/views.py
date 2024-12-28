@@ -123,8 +123,8 @@ class CreateVehicleCapacityView(APIView):
 # New API View for uploading multiple VehicleImage instances
 class VehicleImageUploadView(APIView):
     """API View for uploading multiple VehicleImage instances."""
-    # renderer_classes = [UserRenderer]
-    # permission_classes = [IsAuthenticated]
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         serializer = CreateDocumentSerializer(data=request.data)
@@ -134,9 +134,11 @@ class VehicleImageUploadView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-#
+# API for get all images uploaded earlier
 class UserVehicleImagesView(APIView):
     """API View to retrieve all VehicleImage instances for a specific user."""
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id, *args, **kwargs):
         # Filter images by user_id (assuming a relationship exists between Vehicle and User)
@@ -152,9 +154,11 @@ class UserVehicleImagesView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-#
+# API for delete single and multiple images at a time
 class DeleteImagesView(APIView):
     """API View to delete multiple VehicleImage instances along with their media files."""
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request, user_id, *args, **kwargs):
         serializer = DeleteDocumentSerializer(data=request.data)
