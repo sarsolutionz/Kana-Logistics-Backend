@@ -258,7 +258,7 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
     def validate_images(self, value):
         """Custom validation for multiple images."""
         MAX_SIZE = 5 * 1024 * 1024  # 5MB
-        valid_extensions = ['.jpg', '.jpeg', '.png']
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.pdf']
 
         for img in value:
             # Check file size
