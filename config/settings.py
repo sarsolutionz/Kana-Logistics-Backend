@@ -31,7 +31,7 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "46.202.162.117",
-                 "http://api.kanalogistics.co", "http://www.api.kanalogistics.co"]
+                 "api.kanalogistics.co", "www.api.kanalogistics.co"]
 
 # Application definition
 
@@ -91,11 +91,8 @@ WSGI_APPLICATION = 'config.wsgi.application'
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://46.202.162.117:3000",
-    "http://46.202.162.117:80",
     "https://kanalogistics.co",
-    "https://kanalogistics.co:3000",
-    "https://kanalogistics.co:80",
+    "https://www.kanalogistics.co",
 ]
 
 
