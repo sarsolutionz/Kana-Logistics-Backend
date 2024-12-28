@@ -94,7 +94,7 @@ class VehicleImage(models.Model):
         on_delete=models.CASCADE
     )
     image = models.ImageField(upload_to=get_image_upload_path, blank=False)
-    description = models.CharField(max_length=255, blank=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Vehicle Image'

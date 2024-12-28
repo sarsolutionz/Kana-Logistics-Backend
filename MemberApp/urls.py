@@ -1,5 +1,7 @@
 from django.urls import path
-from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehicleInfo, UpdateVehicleInfoByID, VehicleCapacityListView, CreateVehicleCapacityView, VehicleImageUploadView
+from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehicleInfo, UpdateVehicleInfoByID, \
+    VehicleCapacityListView, CreateVehicleCapacityView, VehicleImageUploadView, UserVehicleImagesView, \
+    DeleteImagesView
 
 urlpatterns = [
     #
@@ -24,5 +26,10 @@ urlpatterns = [
     # 
     # uplode image
     path('upload-images/', VehicleImageUploadView.as_view(), name='upload-images'),
-
+    #
+    # view all images according to
+    path('vehicle/<int:user_id>/images/', UserVehicleImagesView.as_view(), name='user-vehicle-images'),
+    #
+    # delete images urls
+    path('delete-images/<int:user_id>', DeleteImagesView.as_view(), name='delete-images'),
 ]

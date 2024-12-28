@@ -8,13 +8,17 @@ from AdminApp.renderers import UserRenderer
 
 from django.db import IntegrityError
 
-from MemberApp.models import VehicleInfo, VehicleCapacity
+from MemberApp.models import VehicleInfo, VehicleCapacity, VehicleImage
 
-from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, CreateVehicleCapacitySerializer, CreateDocumentSerializer
+from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, \
+    GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, \
+    CreateVehicleCapacitySerializer, CreateDocumentSerializer, DeleteDocumentSerializer, \
+    VehicleImageSerializer
 
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 # Create your views here.
 
@@ -119,6 +123,8 @@ class CreateVehicleCapacityView(APIView):
 # New API View for uploading multiple VehicleImage instances
 class VehicleImageUploadView(APIView):
     """API View for uploading multiple VehicleImage instances."""
+    # renderer_classes = [UserRenderer]
+    # permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         serializer = CreateDocumentSerializer(data=request.data)
@@ -126,3 +132,37 @@ class VehicleImageUploadView(APIView):
             serializer.save()
             return Response({"message": "Images uploaded successfully!"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+#
+class UserVehicleImagesView(APIView):
+    """API View to retrieve all VehicleImage instances for a specific user."""
+
+    def get(self, request, user_id, *args, **kwargs):
+        # Filter images by user_id (assuming a relationship exists between Vehicle and User)
+        images = VehicleImage.objects.filter(vehicle_id=user_id)
+
+        if not images.exists():
+            return Response(
+                {"message": "No images found for the specified user."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = VehicleImageSerializer(images, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+#
+class DeleteImagesView(APIView):
+    """API View to delete multiple VehicleImage instances along with their media files."""
+
+    def delete(self, request, user_id, *args, **kwargs):
+        serializer = DeleteDocumentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        deleted_count, errors = serializer.delete_images(user_id)
+
+        response_data = {"message": f"{deleted_count} images were successfully deleted."}
+        if errors:
+            response_data["errors"] = errors
+
+        return Response(response_data, status=status.HTTP_200_OK)

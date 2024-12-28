@@ -102,7 +102,7 @@ CORS_ALLOWED_ORIGINS = [
 # Setting this to True can be dangerous, as it allows any website to make cross-origin requests to yours
 CORS_ALLOW_ALL_ORIGINS = True
 
-CORS_ALLOW_METHODS = ["GET", "POST"]
+CORS_ALLOW_METHODS = ["GET", "POST", "DELETE"]
 
 DATABASES = {
     'default': {
