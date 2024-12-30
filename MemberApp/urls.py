@@ -25,11 +25,11 @@ urlpatterns = [
     path("create-capacity", CreateVehicleCapacityView.as_view(), name="create-vehicle"),
     # 
     # uplode image
-    path('upload-images/', VehicleImageUploadView.as_view(), name='upload-images'),
+    path('upload-images', VehicleImageUploadView.as_view(), name='upload-images'),
     #
     # view all images according to
-    path('vehicle/<int:user_id>/images/', UserVehicleImagesView.as_view(), name='user-vehicle-images'),
+    path('vehicle/images', UserVehicleImagesView.as_view(), name='user-vehicle-images'),
     #
     # delete images urls
-    path('delete-images/<int:user_id>', DeleteImagesView.as_view(), name='delete-images'),
+    path('delete-images', DeleteImagesView.as_view(), name='delete-images'),
 ]

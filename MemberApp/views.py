@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import RetrieveAPIView
+from rest_framework.parsers import MultiPartParser
 
 from AdminApp.renderers import UserRenderer
 
@@ -125,6 +126,7 @@ class VehicleImageUploadView(APIView):
     """API View for uploading multiple VehicleImage instances."""
     renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]  # Ensure multipart parser is used
 
     def post(self, request, *args, **kwargs):
         serializer = CreateDocumentSerializer(data=request.data)
@@ -140,8 +142,9 @@ class UserVehicleImagesView(APIView):
     renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, user_id, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         # Filter images by user_id (assuming a relationship exists between Vehicle and User)
+        user_id = request.query_params.get('user_id', None)
         images = VehicleImage.objects.filter(vehicle_id=user_id)
 
         if not images.exists():
@@ -160,9 +163,10 @@ class DeleteImagesView(APIView):
     renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, user_id, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         serializer = DeleteDocumentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        user_id = request.query_params.get('user_id', None)
         deleted_count, errors = serializer.delete_images(user_id)
 
         response_data = {"message": f"{deleted_count} images were successfully deleted."}
