@@ -29,8 +29,7 @@ class SignUpAPI(APIView):
             if Driver.objects.filter(Q(email=email) | Q(number=number)).exists():
                 response["status"] = 400
 
-            vehicle_info = VehicleInfo.objects.filter(number=number).first()
-            if vehicle_info:
+            if VehicleInfo.objects.filter(number=number).exists():
                 response["status"] = 400
             else:
                 user_obj = Driver.objects.create(
@@ -38,7 +37,6 @@ class SignUpAPI(APIView):
                     email=email,
                     number=number,
                 )
-
                 response["status"] = 200
 
         except Exception as e:
