@@ -6,11 +6,11 @@ from AuthApp.models import (OneTimePassword, Driver)
 
 
 class DriverAdmin(admin.ModelAdmin):
-    list_display = ["user_id", "email", "name", "number", "vehicle_number", "is_deleted"]
+    list_display = ["user_id", "email", "name", "number", "is_deleted"]
     list_filter = ["email"]
     fieldsets = [
-        ("User Credentials", {"fields": ["name", "email", "number"]}),
-        ("Personal info", {"fields": ["vehicle_info"]}),
+        ("User Credentials", {"fields": ["email", "number"]}),
+        ("Personal info", {"fields": ["name"]}),
         ("Permissions", {"fields": ["is_deleted"]}),
     ]
     add_fieldsets = [
@@ -18,7 +18,7 @@ class DriverAdmin(admin.ModelAdmin):
             None,
             {
                 "classes": ["wide"],
-                "fields": ["email", "name", "number", "vehicle_info" "is_deleted"],
+                "fields": ["email", "name", "number", "is_deleted"],
             },
         ),
     ]

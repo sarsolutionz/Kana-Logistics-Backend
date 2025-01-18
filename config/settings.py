@@ -236,5 +236,10 @@ LOGGING = {
             "level": "INFO",
             "propagate": True,
         },
+        "AuthApp": {
+            "handlers": ["applog"],
+            "level": "INFO",
+            "propagate": True,
+        },
     }
 }

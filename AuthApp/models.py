@@ -45,8 +45,6 @@ class Driver(models.Model):
 
     number = models.CharField(max_length=15, unique=True)
 
-    vehicle_info = models.CharField(max_length=100, blank=True, null=True)
-
     is_deleted = models.BooleanField(default=False)
 
     updated_at = models.DateTimeField(auto_now=True)
@@ -60,11 +58,8 @@ class Driver(models.Model):
     def user_id(self):
         return str(self.id)[:8]
 
-    def vehicle_number(self):
-        return str(self.vehicle_info)
-
     def __str__(self):
-        return f"{self.email} {self.vehicle_info}"
+        return f"{self.email} {self.name}"
 
     def save(self, *args, **kwargs):
         return super(Driver, self).save(*args, **kwargs)
