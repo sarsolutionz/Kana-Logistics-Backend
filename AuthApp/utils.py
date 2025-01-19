@@ -1,7 +1,6 @@
-import os
 import json
 import http.client
-from dotenv import load_dotenv
+from decouple import config
 
 from MemberApp.models import VehicleInfo
 from AuthApp.models import Driver
@@ -11,7 +10,6 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 import logging
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 
 # verify from db and validate phone number
@@ -55,8 +53,8 @@ def send_otp_api(number: str):
     Returns:
         dict: A dictionary containing the response status and message.
     """
-    template_id = os.getenv("TEMP_ID")
-    authkey = os.getenv("AUTH_KEY")
+    template_id = config("TEMP_ID")
+    authkey = config("AUTH_KEY")
 
     # Validate required environment variables
     if not template_id or not authkey:
@@ -115,7 +113,7 @@ def send_otp_api(number: str):
 # Verify otp from url
 def verify_otp(number: str, otp: str):
     try:
-        authkey = os.getenv("AUTH_KEY")
+        authkey = config("AUTH_KEY")
 
         conn = http.client.HTTPSConnection("control.msg91.com")
 
