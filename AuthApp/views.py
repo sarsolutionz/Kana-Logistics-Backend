@@ -168,6 +168,12 @@ class VerifyOtpAPI(APIView):
             verify_otp_status = verify_otp(phone_number, otp)
 
             if verify_otp_status.get("type") == "success":
+                if driver_exists:
+                    user_obj = Driver.objects.get(number=driver_exists)
+                elif vehicle_exists:
+                    # TODO: create email field in vehicle info
+                    pass
+                token = get_tokens_for_user(user_obj=user_obj)
                 return Response(
                     {"status": 200, "msg": "OTP verified successfully.", "token": token})
             elif verify_otp_status["type"] == "error":
