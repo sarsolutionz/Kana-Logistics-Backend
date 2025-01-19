@@ -179,7 +179,7 @@ class VerifyOtpAPI(APIView):
             elif verify_otp_status["type"] == "error":
                 logger.warning(
                     "Invalid OTP provided for phone number %s", phone_number)
-                return Response({"status": 200, "msg": f"{verify_otp_status.get('message', 'Invalid OTP.')}"})
+                return Response({"status": 400, "msg": f"{verify_otp_status.get('message', 'Invalid OTP.')}"})
             else:
                 logger.warning(
                     "Invalid OTP provided for phone number %s", phone_number)
