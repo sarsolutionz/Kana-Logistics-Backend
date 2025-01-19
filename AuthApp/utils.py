@@ -1,21 +1,26 @@
 import os
-import http.client
 import json
-import logging
+import http.client
 from dotenv import load_dotenv
+
 from MemberApp.models import VehicleInfo
 from AuthApp.models import Driver
 from django.db.models import Q
 
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
+import logging
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
 # verify from db and validate phone number
+
+
 def verify_detail(number: str):
     try:
         # Ensure number is valid (non-empty and a valid phone number format)
-        if not number or (10 > len(number) > 13) :
+        if not number or (10 > len(number) > 13):
             raise ValueError("Phone number is invalid or too short.")
 
         # Trim the number to the last 10 digits
@@ -24,10 +29,12 @@ def verify_detail(number: str):
 
         # Check if the phone number exists in Driver and VehicleInfo models
         driver_exists = Driver.objects.filter(Q(number=trimmed_number)).first()
-        vehicle_exists = VehicleInfo.objects.filter(Q(number=trimmed_number)).first()
+        vehicle_exists = VehicleInfo.objects.filter(
+            Q(number=trimmed_number)).first()
 
         # Log successful verification
-        logger.info("Driver exists: %s, Vehicle exists: %s", driver_exists, vehicle_exists)
+        logger.info("Driver exists: %s, Vehicle exists: %s",
+                    driver_exists, vehicle_exists)
 
         return driver_exists.number if driver_exists else False, vehicle_exists.number if vehicle_exists else False
 
@@ -72,7 +79,8 @@ def send_otp_api(number: str):
         # Send POST request
         conn.request(
             "POST",
-            f"/api/v5/otp?otp_length=6&otp_expiry=5&template_id={template_id}&mobile={number.strip()}&authkey={authkey}&realTimeResponse=1",
+            f"/api/v5/otp?otp_length=6&otp_expiry=5&template_id={template_id}&mobile={
+                number.strip()}&authkey={authkey}&realTimeResponse=1",
             payload,
             headers
         )
@@ -113,7 +121,8 @@ def verify_otp(number: str, otp: str):
 
         headers = {'authkey': authkey}
 
-        conn.request("GET", f"/api/v5/otp/verify?otp={otp}&mobile={number}", headers=headers)
+        conn.request(
+            "GET", f"/api/v5/otp/verify?otp={otp}&mobile={number}", headers=headers)
 
         res = conn.getresponse()
         data = res.read().decode("utf-8")
@@ -138,3 +147,16 @@ def verify_otp(number: str, otp: str):
             conn.close()
         except Exception as e:
             logger.warning(f"Error while closing connection: {str(e)}")
+
+
+def get_tokens_for_user(user_obj):
+    refresh = RefreshToken()
+    access = AccessToken()
+
+    access["email"] = user_obj.email
+    refresh["email"] = user_obj.email
+
+    return {
+        "access": str(access),
+        "refresh": str(refresh),
+    }

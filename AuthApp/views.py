@@ -1,11 +1,15 @@
+from django.db.models import Q
+from AuthApp.models import OneTimePassword, Driver
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.models import Q
-from AuthApp.models import OneTimePassword, Driver
-from AuthApp.utils import send_otp_api, verify_detail, verify_otp
+
+from AuthApp.utils import send_otp_api, verify_detail, verify_otp, get_tokens_for_user
+
 from MemberApp.models import VehicleInfo
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,6 +39,8 @@ class SignUpAPI(APIView):
                     number=number,
                 )
                 response["status"] = 200
+                token = get_tokens_for_user(user_obj=user_obj)
+                response["token"] = token
 
         except Exception as e:
             error = f"\nType: {type(e).__name__}"
