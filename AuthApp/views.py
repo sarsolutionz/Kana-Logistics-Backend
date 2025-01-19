@@ -98,16 +98,17 @@ class SendOtpAPI(APIView):
                 response["msg"] = "Phone number is required."
                 return Response(response)
 
-
             # Check if the number exists for a driver or a vehicle
             driver_exists, vehicle_exists = verify_detail(phone_number)
 
             if not driver_exists and not vehicle_exists:
-                logger.info("Number %s is not registered as Driver or Vehicle.", phone_number)
+                logger.info(
+                    "Number %s is not registered as Driver or Vehicle.", phone_number)
                 return Response({"status": 404, "msg": "This number is not registered."})
 
             # Log successful validation
-            logger.info("Number %s found in database. Sending OTP...", phone_number)
+            logger.info(
+                "Number %s found in database. Sending OTP...", phone_number)
 
             # Send OTP
             otp_response = send_otp_api(phone_number)
@@ -115,7 +116,8 @@ class SendOtpAPI(APIView):
                 logger.info("OTP sent successfully to %s.", phone_number)
                 return Response({"status": 200, "msg": "OTP sent successfully."})
             else:
-                logger.error("Failed to send OTP to %s. Response: %s", phone_number, otp_response)
+                logger.error("Failed to send OTP to %s. Response: %s",
+                             phone_number, otp_response)
                 return Response({"status": 500, "msg": "Failed to send OTP. Please try again."})
 
         except Exception as e:
@@ -152,26 +154,27 @@ class VerifyOtpAPI(APIView):
             driver_exists, vehicle_exists = verify_detail(phone_number)
 
             if not driver_exists and not vehicle_exists:
-                logger.info("Phone number %s is not registered as Driver or Vehicle.", phone_number)
+                logger.info(
+                    "Phone number %s is not registered as Driver or Vehicle.", phone_number)
                 return Response({"status": 404, "msg": "This number is not registered."})
 
             # Verify OTP
             verify_otp_status = verify_otp(phone_number, otp)
 
             if verify_otp_status.get("type") == "success":
-                # OTP verified successfully, generate and return JWT token
-                # jwt_token = RefreshToken.for_user()
                 return Response(
-                    {"status": 200, "msg": "OTP verified successfully.", "token": 'jwt_token'})
+                    {"status": 200, "msg": "OTP verified successfully.", "token": token})
             elif verify_otp_status["type"] == "error":
-                logger.warning("Invalid OTP provided for phone number %s", phone_number)
+                logger.warning(
+                    "Invalid OTP provided for phone number %s", phone_number)
                 return Response({"status": 200, "msg": f"{verify_otp_status.get('message', 'Invalid OTP.')}"})
             else:
-                logger.warning("Invalid OTP provided for phone number %s", phone_number)
+                logger.warning(
+                    "Invalid OTP provided for phone number %s", phone_number)
                 return Response({"status": 400, "msg": "Invalid OTP."})
 
         except Exception as e:
             # Catch unexpected errors and log them
-            logger.error("Unexpected error occurred while verifying OTP for phone number %s: %s", phone_number, str(e))
+            logger.error(
+                "Unexpected error occurred while verifying OTP for phone number %s: %s", phone_number, str(e))
             return Response({"status": 500, "msg": "Internal Server Error."})
-

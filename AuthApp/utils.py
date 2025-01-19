@@ -23,13 +23,13 @@ def verify_detail(number: str):
         logger.info("Processing OTP for trimmed number: %s", trimmed_number)
 
         # Check if the phone number exists in Driver and VehicleInfo models
-        driver_exists = Driver.objects.filter(Q(number=trimmed_number)).exists()
-        vehicle_exists = VehicleInfo.objects.filter(Q(number=trimmed_number)).exists()
+        driver_exists = Driver.objects.filter(Q(number=trimmed_number)).first()
+        vehicle_exists = VehicleInfo.objects.filter(Q(number=trimmed_number)).first()
 
         # Log successful verification
         logger.info("Driver exists: %s, Vehicle exists: %s", driver_exists, vehicle_exists)
 
-        return driver_exists, vehicle_exists
+        return driver_exists.number if driver_exists else False, vehicle_exists.number if vehicle_exists else False
 
     except ValueError as ve:
         # Handle invalid phone number format error
