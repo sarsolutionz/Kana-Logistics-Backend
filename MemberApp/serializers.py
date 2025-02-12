@@ -323,7 +323,16 @@ class VehicleImageSerializer(serializers.ModelSerializer):
         model = VehicleImage
         fields = ['id', 'vehicle', 'image', 'description']  # Include relevant fields
 
+    def create(self, validated_data):
+        """Handle image upload and update vehicle status."""
+        vehicle = validated_data["vehicle"]
+        vehicle_image = VehicleImage.objects.create(**validated_data)
 
+        # Update vehicle status dynamically
+        vehicle.update_status()
+
+        return vehicle_image
+    
 #
 
 class DeleteDocumentSerializer(serializers.Serializer):
@@ -362,6 +371,7 @@ class DeleteDocumentSerializer(serializers.Serializer):
         image_ids = self.validated_data['image_ids']
         deleted_count = 0
         errors = []
+        affected_vehicles = set()  # Track vehicles whose images are deleted
 
         for image_id in image_ids:
             try:
@@ -383,5 +393,9 @@ class DeleteDocumentSerializer(serializers.Serializer):
                 errors.append(f"Image with ID {image_id} does not exist.")
             except Exception as e:
                 errors.append(f"Error deleting image {image_id}: {str(e)}")
+
+            # Update the status of all affected vehicles
+        for vehicle in affected_vehicles:
+            vehicle.update_status()
 
         return deleted_count, errors

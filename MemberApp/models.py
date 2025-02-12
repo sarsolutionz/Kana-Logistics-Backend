@@ -11,7 +11,7 @@ class VehicleCapacity(models.Model):
         decimal_places=1,
         blank=True,
         validators=[MinValueValidator(0.1)],    # Ensure capacity is positive
-        unique=True,   
+        unique=True,
     )
 
     @property
@@ -29,6 +29,11 @@ class VehicleInfo(models.Model):
         ('close', 'Close')
     ]
 
+    class StatusChoices(models.TextChoices):
+        IN_PROGRESS = "IN_PROGRESS", "In Progress"
+        IN_COMPLETE = "IN_COMPLETE", "Incomplete"
+        COMPLETED = "COMPLETED", "Completed"
+
     model = models.CharField(max_length=200, blank=True)
 
     capacity = models.ForeignKey(
@@ -43,7 +48,13 @@ class VehicleInfo(models.Model):
     vehicle_type = models.CharField(
         max_length=10,
         choices=VEHICLE_TYPE_CHOICES,
-        default='',
+        default='IN_COMPLETE',
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.IN_COMPLETE
     )
 
     vehicle_number = models.CharField(
@@ -56,6 +67,18 @@ class VehicleInfo(models.Model):
         )],
     )
 
+    def update_status(self):
+        """Update vehicle status based on the number of associated images."""
+        image_count = self.images.count()  # Using related_name
+
+        if image_count == 0:
+            self.status = self.StatusChoices.IN_COMPLETE
+        elif 1 <= image_count < 4:
+            self.status = self.StatusChoices.IN_PROGRESS
+        else:
+            self.status = self.StatusChoices.COMPLETED
+
+        self.save(update_fields=["status"])
 
     class Meta:
         verbose_name = "Vehicle"
@@ -84,7 +107,7 @@ def get_image_upload_path(instance, filename):
 
 class VehicleImage(models.Model):
     """Model to store images for vehicles."""
-    
+
     # UUID as primary key for the image
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 

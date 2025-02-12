@@ -42,6 +42,8 @@ class GetAllVehicleInfoAPI(APIView):
     def get(self, request, *args, **kwargs):
         try:
             vehicles = VehicleInfo.objects.all()
+            for vehicle in vehicles:
+                vehicle.update_status()
             serializer = GetAllVehicleInfoSerializer(vehicles, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -94,6 +96,8 @@ class VehicleCapacityListView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             capacities = VehicleInfo.objects.all()
+            for vehicle in capacities:
+                vehicle.update_status()
             serializer = VehicleCapacitySerializer(capacities, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
