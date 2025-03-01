@@ -44,15 +44,6 @@ def verify_detail(number: str):
 
 # Helper function to send otp
 def send_otp_api(number: str):
-    """
-    Sends an OTP to the specified mobile number using the MSG91 API.
-
-    Args:
-        number (str): The mobile number to which the OTP should be sent.
-
-    Returns:
-        dict: A dictionary containing the response status and message.
-    """
     template_id = config("TEMP_ID")
     authkey = config("AUTH_KEY")
 
@@ -145,16 +136,3 @@ def verify_otp(number: str, otp: str):
             conn.close()
         except Exception as e:
             logger.warning(f"Error while closing connection: {str(e)}")
-
-
-def get_tokens_for_user(user_obj):
-    refresh = RefreshToken()
-    access = AccessToken()
-
-    access["email"] = user_obj.email
-    refresh["email"] = user_obj.email
-
-    return {
-        "access": str(access),
-        "refresh": str(refresh),
-    }

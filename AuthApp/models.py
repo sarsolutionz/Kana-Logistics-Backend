@@ -1,43 +1,18 @@
 from django.db import models
-from django.utils import timezone
-import uuid
+from AdminApp.models import User
 
 import logging
+import uuid
 
 # Create your models here.
 
 logger = logging.getLogger(__name__)
 
-
-class OneTimePassword(models.Model):
-    reference_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False)
-
-    mobile_number = models.CharField(max_length=100, blank=True, null=True)
-
-    created = models.DateTimeField(default=timezone.now)
-
-    otp = models.CharField(max_length=100, blank=True, null=True)
-
-    class Meta:
-        verbose_name = "OTP"
-        verbose_name_plural = "OTPs"
-
-    def __str__(self):
-        return f"{self.reference_id} - {self.mobile_number} - {self.otp}"
-
-    def is_expired(self):
-        if (timezone.now() - self.created).seconds > 300:
-            return True
-        return False
-
-    def save(self, *args, **kwargs):
-        self.created = timezone.now()
-        return super(OneTimePassword, self).save(*args, **kwargs)
-
-
 class Driver(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    user = models.ForeignKey(User, null=True, blank=True,
+                             on_delete=models.SET_NULL)
 
     name = models.CharField(max_length=100)
 
@@ -55,7 +30,7 @@ class Driver(models.Model):
         verbose_name = "Driver"
         verbose_name_plural = "Drivers"
 
-    def user_id(self):
+    def short_id(self):
         return str(self.id)[:8]
 
     def __str__(self):

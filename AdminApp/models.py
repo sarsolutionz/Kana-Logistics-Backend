@@ -48,6 +48,7 @@ class User(AbstractBaseUser):
         unique=True,
     )
     name = models.CharField(max_length=200)
+    number = models.CharField(max_length=15, unique=True, null=True, default=None)
     is_active = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, null=True)

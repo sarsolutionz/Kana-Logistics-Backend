@@ -136,3 +136,13 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
+
+# Migrations # 
+AuthApp/migrations/00*
+MemberApp/migrations/00*
+AdminApp/migrations/00*
+
+# INI files #
+AuthApp/migrations/__init__.py
+MemberApp/migrations/__init__.py
+AdminApp/migrations/__init__.py
