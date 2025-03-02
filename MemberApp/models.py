@@ -67,18 +67,18 @@ class VehicleInfo(models.Model):
         )],
     )
 
-    def update_status(self):
-        """Update vehicle status based on the number of associated images."""
-        image_count = self.images.count()  # Using related_name
+    def update_status(self, save_instance=True):
+        image_count = self.images.count() 
 
         if image_count == 0:
-            self.status = self.StatusChoices.IN_COMPLETE
-        elif 1 <= image_count < 4:
-            self.status = self.StatusChoices.IN_PROGRESS
-        else:
-            self.status = self.StatusChoices.COMPLETED
+                self.status = self.StatusChoices.IN_COMPLETE
 
-        self.save(update_fields=["status"])
+        if self.status != self.StatusChoices.COMPLETED:
+            if image_count >= 1:
+                self.status = self.StatusChoices.IN_PROGRESS
+
+        if save_instance:
+            self.save(update_fields=["status"])
 
     class Meta:
         verbose_name = "Vehicle"

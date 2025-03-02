@@ -11,7 +11,7 @@ from AuthApp.utils import send_otp_api, verify_detail, verify_otp
 from AdminApp.models import User
 from AdminApp.views import get_tokens_for_user
 
-from MemberApp.models import VehicleInfo
+from MemberApp.models import VehicleInfo, VehicleImage
 
 import logging
 
@@ -130,6 +130,21 @@ class VerifyOtpAPI(APIView):
                     if user_obj:
                         user = User.objects.filter(
                             email=user_obj.email).first()
+                        vehicle_exist = VehicleInfo.objects.filter(
+                            number=user_obj.number).first()
+                        if vehicle_exist:
+                            document_exist = vehicle_exist.status
+
+                        if vehicle_exist:
+                            response["Vehicle"] = True
+                            if document_exist == "COMPLETED":
+                                response["Document"] = True
+                            else:
+                                response["Document"] = False
+                        else:
+                            response["Vehicle"] = False
+                            response["Document"] = False
+
                 elif vehicle_exists:
                     # TODO: create email field in vehicle info
                     pass

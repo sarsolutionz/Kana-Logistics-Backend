@@ -152,7 +152,7 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleInfo
         fields = ['id', 'model', 'name', 'number', 'address',
-                  'vehicle_type', 'vehicle_number', 'capacity']
+                  'vehicle_type', 'status' ,'vehicle_number', 'capacity']
 
     def validate_vehicle_number(self, value):
         """
@@ -178,9 +178,6 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
             logger.error(f"Error in updating vehicle: {e}")
 
     def update(self, instance, validated_data):
-        """
-        Update the fields of the VehicleInfo model.
-        """
         capacity_data = validated_data.pop('capacity', None)
 
         # Handle the capacity update if it exists
@@ -190,7 +187,12 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
                 capacity=capacity_value)
             instance.capacity = capacity_obj
 
-        # Update other fields
+        if 'status' in validated_data:
+            if validated_data['status'] == instance.StatusChoices.COMPLETED:
+                instance.status = validated_data['status']
+            else:
+                instance.update_status(save_instance=False)
+            
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
