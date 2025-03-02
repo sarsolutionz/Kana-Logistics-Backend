@@ -31,8 +31,9 @@ class CreateVehicleAPI(APIView):
     def post(self, request, *args, **kwargs):
         serializer = CreateVehicleInfoSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"message": "Vehicle information created successfully"}, status=status.HTTP_201_CREATED)
+        vehicle_info = serializer.save()
+        vehicle_id = vehicle_info.id
+        return Response({"message": "Vehicle information created successfully", "vehicle_id": vehicle_id}, status=status.HTTP_201_CREATED)
 
 
 class GetAllVehicleInfoAPI(APIView):
@@ -173,7 +174,8 @@ class DeleteImagesView(APIView):
         user_id = request.query_params.get('user_id', None)
         deleted_count, errors = serializer.delete_images(user_id)
 
-        response_data = {"message": f"{deleted_count} images were successfully deleted."}
+        response_data = {
+            "message": f"{deleted_count} images were successfully deleted."}
         if errors:
             response_data["errors"] = errors
 
