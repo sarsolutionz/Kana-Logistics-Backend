@@ -11,6 +11,7 @@ import os
 from uuid import UUID
 from django.conf import settings
 from rest_framework import serializers
+from drf_extra_fields.fields import Base64ImageField
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -249,7 +250,7 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
     """Serializer for creating multiple VehicleImage instances."""
 
     images = serializers.ListField(
-        child=serializers.ImageField(),
+        child=Base64ImageField(),
         write_only=True
     )
 
