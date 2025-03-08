@@ -136,6 +136,7 @@ class VerifyOtpAPI(APIView):
                             document_exist = vehicle_exist.status
 
                         if vehicle_exist:
+                            response["vehicle_id"] = vehicle_exist.id
                             response["Vehicle"] = True
                             if document_exist == "COMPLETED":
                                 response["Document"] = True
