@@ -3,7 +3,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from AuthApp.views import (
     SignUpAPI,
     SendOtpAPI,
-    VerifyOtpAPI
+    VerifyOtpAPI,
+    ProfileDocsStatusAPI,
 )
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path("refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
     path("send-otp/", SendOtpAPI.as_view(), name="send_otp"),
     path("verify-otp/", VerifyOtpAPI.as_view(), name="verify_otp"),
+    path("docs-status/", ProfileDocsStatusAPI.as_view(), name="docs_status"),
 ]

@@ -68,8 +68,8 @@ def send_otp_api(number: str):
         # Send POST request
         conn.request(
             "POST",
-            f"/api/v5/otp?otp_length=6&otp_expiry=5&template_id={template_id}&mobile={
-                number.strip()}&authkey={authkey}&realTimeResponse=1",
+            f"""/api/v5/otp?otp_length=6&otp_expiry=5&template_id={template_id}&mobile={
+                number.strip()}&authkey={authkey}&realTimeResponse=1""",
             payload,
             headers
         )

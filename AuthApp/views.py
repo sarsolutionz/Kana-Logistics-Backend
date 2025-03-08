@@ -161,3 +161,32 @@ class VerifyOtpAPI(APIView):
             error += f"\nMessage: {str(e)}"
             logger.error(error)
         return Response(response)
+
+
+class ProfileDocsStatusAPI(APIView):
+    def get(self, request):
+        response = {"status": 400}  
+
+        try:
+            phoneNumber = request.query_params.get("phone")
+            if not phoneNumber:
+                response["status"] = 400
+                response["msg"] = "Phone number is required."
+                return Response(response)
+
+            user_info = VehicleInfo.objects.filter(number=phoneNumber).first()
+
+            if user_info:
+                response["status"] = 200
+                response["Document"] = user_info.status
+            else:
+                response["status"] = 404
+                response["msg"] = "Vehicle not found."
+
+        except Exception as e:
+            # Catch and log any exceptions
+            logger.error(f"Error occurred: {str(e)}", exc_info=True)
+            response["status"] = 500
+            response["msg"] = "Internal server error."
+
+        return Response(response)
