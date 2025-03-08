@@ -31,13 +31,10 @@ def verify_detail(number: str):
             Q(number=trimmed_number)).first()
 
         # Log successful verification
-        logger.info(
-            "Driver exists: %s, Vehicle exists: %s", driver_exists, vehicle_exists
-        )
+        logger.info("Driver exists: %s, Vehicle exists: %s",
+                    driver_exists, vehicle_exists)
 
-        return driver_exists.number if driver_exists else False, (
-            vehicle_exists.number if vehicle_exists else False
-        )
+        return driver_exists.number if driver_exists else False, vehicle_exists.number if vehicle_exists else False
 
     except ValueError as ve:
         # Handle invalid phone number format error
@@ -61,17 +58,20 @@ def send_otp_api(number: str):
         conn = http.client.HTTPSConnection("control.msg91.com")
 
         # Prepare request payload and headers
-        payload = json.dumps(
-            {"Param1": "value1", "Param2": "value2", "Param3": "value3"}
-        )
-        headers = {"Content-Type": "application/JSON"}
+        payload = json.dumps({
+            "Param1": "value1",
+            "Param2": "value2",
+            "Param3": "value3"
+        })
+        headers = {'Content-Type': "application/JSON"}
 
         # Send POST request
         conn.request(
             "POST",
-            f"/api/v5/otp?otp_length=6&otp_expiry=5&template_id={template_id}&mobile={number.strip()}&authkey={authkey}&realTimeResponse=1",
+            f"/api/v5/otp?otp_length=6&otp_expiry=5&template_id={template_id}&mobile={
+                number.strip()}&authkey={authkey}&realTimeResponse=1",
             payload,
-            headers,
+            headers
         )
 
         # Read and parse response
@@ -91,10 +91,7 @@ def send_otp_api(number: str):
             f"Line: {e.__traceback__.tb_lineno}"
         )
         logger.error(error_msg)
-        return {
-            "status": "error",
-            "message": "Failed to send OTP due to an internal error.",
-        }
+        return {"status": "error", "message": "Failed to send OTP due to an internal error."}
 
     finally:
         # Ensure the connection is closed
@@ -111,11 +108,10 @@ def verify_otp(number: str, otp: str):
 
         conn = http.client.HTTPSConnection("control.msg91.com")
 
-        headers = {"authkey": authkey}
+        headers = {'authkey': authkey}
 
         conn.request(
-            "GET", f"/api/v5/otp/verify?otp={otp}&mobile={number}", headers=headers
-        )
+            "GET", f"/api/v5/otp/verify?otp={otp}&mobile={number}", headers=headers)
 
         res = conn.getresponse()
         data = res.read().decode("utf-8")

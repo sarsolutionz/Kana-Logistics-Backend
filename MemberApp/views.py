@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import RetrieveAPIView
-from rest_framework.parsers import MultiPartParser, JSONParser
+from rest_framework.parsers import MultiPartParser
 
 from AdminApp.renderers import UserRenderer
 
@@ -131,7 +131,7 @@ class VehicleImageUploadView(APIView):
     """API View for uploading multiple VehicleImage instances."""
     renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
-    parser_classes = [JSONParser]  # Ensure multipart parser is used
+    parser_classes = [MultiPartParser]  # Ensure multipart parser is used
 
     def post(self, request, *args, **kwargs):
         serializer = CreateDocumentSerializer(data=request.data)
@@ -157,7 +157,7 @@ class UserVehicleImagesView(APIView):
                 {"message": "No images found for the specified user."},
                 status=status.HTTP_404_NOT_FOUND
             )
-            
+
         serializer = VehicleImageSerializer(images, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
