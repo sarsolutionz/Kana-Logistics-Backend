@@ -123,7 +123,6 @@ class VerifyOtpAPI(APIView):
 
             # Verify OTP
             verify_otp_status = verify_otp(phone_number, otp)
-
             if verify_otp_status.get("type") == "success":
                 if driver_exists:
                     user_obj = Driver.objects.get(number=driver_exists)
@@ -136,11 +135,14 @@ class VerifyOtpAPI(APIView):
                             document_exist = vehicle_exist.status
 
                         if vehicle_exist:
+                            response["vehicle_id"] = vehicle_exist.id
                             response["Vehicle"] = True
                             if document_exist == "COMPLETED":
-                                response["Document"] = True
+                                response["Document"] = 3
+                            elif document_exist == "IN_COMPLETE" or document_exist == "IN_PROGRESS":
+                                response["Document"] = 2
                             else:
-                                response["Document"] = False
+                                response["Document"] = 1
                         else:
                             response["Vehicle"] = False
                             response["Document"] = False
@@ -155,6 +157,7 @@ class VerifyOtpAPI(APIView):
                 response["token"] = token
 
         except Exception as e:
+            print(e)
             error = f"\nType: {type(e).__name__}"
             error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
             error += f"\nLine: {e.__traceback__.tb_lineno}"
