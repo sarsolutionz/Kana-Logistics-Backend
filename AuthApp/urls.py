@@ -5,6 +5,7 @@ from AuthApp.views import (
     SendOtpAPI,
     VerifyOtpAPI,
     ProfileDocsStatusAPI,
+    UpdateLocationAPI,
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path("send-otp/", SendOtpAPI.as_view(), name="send_otp"),
     path("verify-otp/", VerifyOtpAPI.as_view(), name="verify_otp"),
     path("docs-status/", ProfileDocsStatusAPI.as_view(), name="docs_status"),
+    path("update-location/", UpdateLocationAPI.as_view(), name="update_location"),
 ]

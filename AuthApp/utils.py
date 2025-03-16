@@ -1,6 +1,9 @@
 import json
 import http.client
 from decouple import config
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderServiceError
+
 
 from MemberApp.models import VehicleInfo
 from AuthApp.models import Driver
@@ -140,3 +143,31 @@ def verify_otp(number: str, otp: str):
             conn.close()
         except Exception as e:
             logger.warning(f"Error while closing connection: {str(e)}")
+
+
+def get_location(lat: str, long: str):
+    # Initialize Nominatim API with a more descriptive user agent
+    geolocator = Nominatim(user_agent="Kana_logic")
+
+    # Latitude & Longitude input
+    Latitude = lat
+    Longitude = long
+
+    try:
+        location = geolocator.reverse(f"{Latitude}, {Longitude}")
+        return str(location)
+        # address = location.raw['address']
+        # Traverse the data
+        # city = address.get('city', '')
+        # state = address.get('state', '')
+        # country = address.get('country', '')
+        # code = address.get('country_code')
+        # zipcode = address.get('postcode')
+
+        # print('City : ', city)
+        # print('State : ', state)
+        # print('Country : ', country)
+        # print('Zip Code : ', zipcode)
+    except Exception as e:
+        logger.error(f"Error in get_location: {str(e)}")
+        return None

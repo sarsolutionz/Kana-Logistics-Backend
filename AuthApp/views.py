@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from AuthApp.models import Driver
-from AuthApp.utils import send_otp_api, verify_detail, verify_otp
+from AuthApp.utils import send_otp_api, verify_detail, verify_otp, get_location
 
 from AdminApp.models import User
 from AdminApp.views import get_tokens_for_user
@@ -191,4 +191,38 @@ class ProfileDocsStatusAPI(APIView):
             response["status"] = 500
             response["msg"] = "Internal server error."
 
+        return Response(response)
+
+
+class UpdateLocationAPI(APIView):
+    def post(self, request):
+        response = {"status": 400}
+        try:
+            phone_number = request.data.get("phone")
+            latitude = request.data.get("latitude")
+            longitude = request.data.get("longitude")
+
+            if not phone_number or not latitude or not longitude:
+                response["msg"] = "Phone number, latitude and longitude are required."
+                return Response(response)
+
+            vehicle_info = VehicleInfo.objects.filter(number=phone_number).first()
+
+            if vehicle_info:
+                get_location_response = get_location(latitude, longitude)
+                if not get_location_response:
+                    return Response({"status": 500, "msg": "Failed to get location."})
+                
+                vehicle_info.address = get_location_response
+                vehicle_info.save()
+                response["status"] = 200
+                response["msg"] = "Location updated successfully."
+                
+            else:
+                response["status"] = 404
+                response["msg"] = "Vehicle not found."
+        except Exception as e: 
+            logger.error(f"Error occurred: {str(e)}", exc_info=True)
+            response["status"] = 500
+            response["msg"] = "Internal server error."
         return Response(response)
