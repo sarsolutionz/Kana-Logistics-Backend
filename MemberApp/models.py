@@ -68,7 +68,8 @@ class VehicleInfo(models.Model):
     )
 
     def update_status(self, save_instance=True):
-        image_count = self.images.count() 
+        self.refresh_from_db()
+        image_count = self.images.count()
 
         if image_count == 0:
                 self.status = self.StatusChoices.IN_COMPLETE
@@ -127,6 +128,14 @@ class VehicleImage(models.Model):
     def __str__(self):
         """Return a string representation of the image."""
         return f"Image ({self.id})"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.vehicle.update_status()
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        self.vehicle.update_status()
 
     def clean(self):
         """Override the clean method to add custom validation if needed."""

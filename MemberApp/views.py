@@ -131,10 +131,10 @@ class VehicleImageUploadView(APIView):
     """API View for uploading multiple VehicleImage instances."""
     renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
-    parser_classes = [JSONParser]  # Ensure multipart parser is used
+    parser_classes = [JSONParser, MultiPartParser]  # Ensure multipart parser is used
 
     def post(self, request, *args, **kwargs):
-        serializer = CreateDocumentSerializer(data=request.data)
+        serializer = CreateDocumentSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Images uploaded successfully!"}, status=status.HTTP_201_CREATED)

@@ -250,13 +250,30 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
     """Serializer for creating multiple VehicleImage instances."""
 
     images = serializers.ListField(
-        child=Base64ImageField(),
+        child=serializers.ImageField(),
         write_only=True
     )
 
     class Meta:
         model = VehicleImage
         fields = ['vehicle', 'images', 'description']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        content_type = self.context.get("request").content_type
+        if content_type.startswith("multipart/form-data"):
+            self.fields['images'] = serializers.ListField(
+                child=serializers.ImageField(),
+                write_only=True
+            )
+        elif content_type == 'application/json':
+            self.fields['images'] = serializers.ListField(
+                child=Base64ImageField(),
+                write_only=True
+            )
+        else:
+            raise serializers.ValidationError("Unsupported content type.")
 
     def validate_images(self, value):
         """Custom validation for multiple images."""
@@ -315,7 +332,13 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
             )
 
         # Bulk create all VehicleImage instances
-        return VehicleImage.objects.bulk_create(vehicle_images)
+        VehicleImage.objects.bulk_create(vehicle_images)
+
+        image_count = vehicle.images.count()
+        if image_count >= 1:
+            vehicle.status = vehicle.StatusChoices.IN_PROGRESS
+        vehicle.save(update_fields=["status"])
+        return vehicle_images
 
 
 #
