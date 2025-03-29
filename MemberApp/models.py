@@ -34,6 +34,11 @@ class VehicleInfo(models.Model):
         IN_COMPLETE = "IN_COMPLETE", "Incomplete"
         COMPLETED = "COMPLETED", "Completed"
 
+    class LocationStatusChoices(models.TextChoices):
+        ON_LOCATION = "ON_LOCATION", "On Location"
+        OFF_LOCATION = "OFF_LOCATION", "Off Location"
+        IN_TRANSIT = "IN_TRANSIT", "In Transit"
+
     model = models.CharField(max_length=200, blank=True)
 
     capacity = models.ForeignKey(
@@ -42,6 +47,8 @@ class VehicleInfo(models.Model):
     name = models.CharField(max_length=200, blank=True)
 
     number = models.CharField(max_length=15, blank=True)
+
+    alternate_number = models.CharField(max_length=15, unique=True, blank=True)
 
     address = models.CharField(max_length=1000, blank=True)
 
@@ -55,6 +62,12 @@ class VehicleInfo(models.Model):
         max_length=20,
         choices=StatusChoices.choices,
         default=StatusChoices.IN_COMPLETE
+    )
+
+    location_status = models.CharField(
+        max_length=20,
+        choices=LocationStatusChoices.choices,
+        default=LocationStatusChoices.OFF_LOCATION,
     )
 
     vehicle_number = models.CharField(
@@ -72,7 +85,7 @@ class VehicleInfo(models.Model):
         image_count = self.images.count()
 
         if image_count == 0:
-                self.status = self.StatusChoices.IN_COMPLETE
+            self.status = self.StatusChoices.IN_COMPLETE
 
         if self.status != self.StatusChoices.COMPLETED:
             if image_count >= 1:
@@ -86,7 +99,7 @@ class VehicleInfo(models.Model):
         verbose_name_plural = "Vehicles Info"
 
     def __str__(self):
-        return f"{self.model} {self.name} {self.capacity} ({self.vehicle_type} - {self.vehicle_number})"
+        return f"{self.model} {self.name} {self.capacity} ({self.vehicle_type} - {self.vehicle_number} - {self.location_status})"
 
     def save(self, *args, **kwargs):
         # Check if the specified capacity exists, or create a new one
@@ -128,7 +141,7 @@ class VehicleImage(models.Model):
     def __str__(self):
         """Return a string representation of the image."""
         return f"Image ({self.id})"
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.vehicle.update_status()

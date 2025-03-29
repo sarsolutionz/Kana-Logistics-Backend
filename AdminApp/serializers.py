@@ -49,6 +49,77 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ["id", "email", "name", "is_active", "is_admin"]
 
 
+class GetAllProfilesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "email", "name", "is_active", "is_admin", "role"]
+
+
+class UserEditByIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'name', 'is_active', 'role', 'is_admin']
+        extra_kwargs = {
+            'email': {'read_only': True},
+            'id': {'read_only': True},
+            # Prevent direct admin status changes
+            'is_admin': {'read_only': True}
+        }
+
+    def validate_email(self, value):
+        if value and User.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value.lower() if value else value
+
+    def validate(self, data):
+        requesting_user = self.context['request'].user
+        target_user = self.instance
+        
+        # Check if role is being changed
+        if 'role' in data:
+            # Admin can set any role (including admin) for any user
+            if not requesting_user.is_admin:
+                raise serializers.ValidationError(
+                    {"role": "Only admin users can change roles."}
+                )
+                
+            # Additional check if trying to set admin role
+            if data['role'] == 'admin' and not requesting_user.is_admin:
+                raise serializers.ValidationError(
+                    {"role": "Only superusers can assign admin role."}
+                )
+        
+        return data
+
+    def update(self, instance, validated_data):
+        requesting_user = self.context['request'].user
+        
+        # Auto-set is_admin based on role
+        if 'role' in validated_data:
+            new_role = validated_data['role']
+            validated_data['is_admin'] = (new_role == 'admin')
+            
+            # If promoting to admin, ensure the requesting user is superuser
+            if new_role == 'admin' and not requesting_user.is_admin:
+                raise serializers.ValidationError(
+                    {"role": "Only superusers can create admin users."}
+                )
+        
+        # Admin can activate/deactivate users
+        if 'is_active' in validated_data and not requesting_user.is_admin:
+            raise serializers.ValidationError(
+                {"is_active": "Only admin users can change activation status."}
+            )
+        
+        return super().update(instance, validated_data)
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id','email','name','is_active','role','is_admin','created_at','updated_at']
+        read_only_fields = ['id','email','created_at','updated_at']
+
 class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=15, min_length=8, style={
                                      'input_type': 'password'}, write_only=True)
@@ -83,16 +154,17 @@ class PasswordResetEmailSerializer(serializers.Serializer):
             user = User.objects.get(email=email)
             uid = urlsafe_base64_encode(force_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
-            link = "http://127.0.0.1:8000/api/user/reset/"+ uid + "/" + token
+            link = "http://127.0.0.1:8000/api/user/reset/" + uid + "/" + token
             data = {
                 "subject": "Reset Your Password",
                 "body": "Click Following Link to Reset Your Password: " + link,
                 "to_email": user.email
             }
-            Util.send_email(data=data)            
+            Util.send_email(data=data)
             return attrs
         else:
             raise serializers.ValidationError({"User": "Invalid credentials."})
+
 
 class PasswordResetSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=15, min_length=8, style={
@@ -116,10 +188,12 @@ class PasswordResetSerializer(serializers.Serializer):
             id = smart_str(urlsafe_base64_decode(uid))
             user = User.objects.get(id=id)
             if not PasswordResetTokenGenerator().check_token(user=user, token=token):
-                raise serializers.ValidationError({"Token": "Invalid token or Expired."})
+                raise serializers.ValidationError(
+                    {"Token": "Invalid token or Expired."})
             user.set_password(password)
             user.save()
             return attrs
         except DjangoUnicodeDecodeError as identifier:
             PasswordResetTokenGenerator().check_token(user=user, token=token)
-            raise serializers.ValidationError({"Token": "Invalid token or Expired."})
+            raise serializers.ValidationError(
+                {"Token": "Invalid token or Expired."})
