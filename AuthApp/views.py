@@ -201,6 +201,7 @@ class UpdateLocationAPI(APIView):
             phone_number = request.data.get("phone")
             latitude = request.data.get("latitude")
             longitude = request.data.get("longitude")
+            status = request.data.get("location_status")
 
             if not phone_number or not latitude or not longitude:
                 response["msg"] = "Phone number, latitude and longitude are required."
@@ -214,6 +215,7 @@ class UpdateLocationAPI(APIView):
                     return Response({"status": 500, "msg": "Failed to get location."})
                 
                 vehicle_info.address = get_location_response
+                vehicle_info.location_status = status
                 vehicle_info.save()
                 response["status"] = 200
                 response["msg"] = "Location updated successfully."
