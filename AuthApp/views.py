@@ -131,13 +131,13 @@ class VerifyOtpAPI(APIView):
                         user = User.objects.filter(
                             email=user_obj.email).first()
                         vehicle_exist = VehicleInfo.objects.filter(
-                            number=user_obj.number).first()
+                            alternate_number=user_obj.number).first()
                         if vehicle_exist:
                             document_exist = vehicle_exist.status
 
                         if vehicle_exist:
                             response["vehicle_id"] = vehicle_exist.id
-                            response["phone"] = vehicle_exist.number
+                            response["phone"] = vehicle_exist.alternate_number
                             response["Vehicle"] = True
                             if document_exist == "COMPLETED":
                                 response["Document"] = True
@@ -176,7 +176,7 @@ class ProfileDocsStatusAPI(APIView):
                 response["msg"] = "Phone number is required."
                 return Response(response)
 
-            user_info = VehicleInfo.objects.filter(number=phoneNumber).first()
+            user_info = VehicleInfo.objects.filter(alternate_number=phoneNumber).first()
 
             if user_info:
                 response["status"] = 200
@@ -206,7 +206,7 @@ class UpdateLocationAPI(APIView):
                 response["msg"] = "Phone number, latitude and longitude are required."
                 return Response(response)
 
-            vehicle_info = VehicleInfo.objects.filter(number=phone_number).first()
+            vehicle_info = VehicleInfo.objects.filter(alternate_number=phone_number).first()
 
             if vehicle_info:
                 get_location_response = get_location(latitude, longitude)

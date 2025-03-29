@@ -29,6 +29,12 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
     model = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
     number = serializers.CharField(max_length=255)
+    alternate_number = serializers.CharField(max_length=255)
+    location_status = serializers.ChoiceField(
+        choices=VehicleInfo.LocationStatusChoices.choices,
+        default=VehicleInfo.LocationStatusChoices.OFF_LOCATION,
+        required=False
+    )
     address = serializers.CharField(max_length=255)
     vehicle_type = serializers.ChoiceField(
         choices=[('open', 'Open'), ('close', 'Close')])
@@ -36,14 +42,15 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VehicleInfo
-        fields = ['model', 'name', 'number', 'address',
+        fields = ['model', 'name', 'number', 'alternate_number', 'location_status', 'address',
                   'vehicle_type', 'vehicle_number', 'capacity']
 
     def validate(self, attrs):
         try:
             # Validate required fields
             required_fields = ['model', 'capacity', 'name',
-                               'number', 'vehicle_number', 'vehicle_type']
+                               'number', 'alternate_number', 'location_status', 'vehicle_number', 'vehicle_type']
+
             for field in required_fields:
                 if not attrs.get(field):
                     raise serializers.ValidationError(
@@ -68,6 +75,12 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'capacity': 'Capacity is required'})
 
+            location_status = attrs.get('location_status')
+            if location_status and location_status not in VehicleInfo.LocationStatusChoices.values:
+                raise serializers.ValidationError({
+                    'location_status': f'Invalid status. Valid choices are: {dict(VehicleInfo.LocationStatusChoices.choices)}'
+                })
+
             return attrs
         except Exception as e:
             # Log the error
@@ -84,6 +97,8 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
         return False
 
     def create(self, validated_data):
+        if 'location_status' not in validated_data:
+            validated_data['location_status'] = VehicleInfo.LocationStatusChoices.OFF_LOCATION
         try:
             # Create the new VehicleInfo instance if validation is successful
             vehicle_info = VehicleInfo.objects.create(**validated_data)
@@ -95,9 +110,13 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         try:
             # Update existing vehicle information if validation is successful
+            if 'location_status' in validated_data:
+                instance.location_status = validated_data['location_status']
             instance.model = validated_data.get('model', instance.model)
             instance.name = validated_data.get('name', instance.name)
             instance.number = validated_data.get('number', instance.number)
+            instance.alternate_number = validated_data.get(
+                'alternate_number', instance.number)
             instance.vehicle_number = validated_data.get(
                 'vehicle_number', instance.vehicle_number)
             instance.vehicle_type = validated_data.get(
@@ -149,11 +168,15 @@ class GetByIdVehicleInfoSerializer(serializers.ModelSerializer):
 class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
     capacity = serializers.DecimalField(
         source='capacity.capacity', max_digits=4, decimal_places=1)
+    location_status = serializers.ChoiceField(
+        choices=VehicleInfo.LocationStatusChoices.choices,
+        required=False
+    )
 
     class Meta:
         model = VehicleInfo
-        fields = ['id', 'model', 'name', 'number', 'address',
-                  'vehicle_type', 'status' ,'vehicle_number', 'capacity']
+        fields = ['id', 'model', 'name', 'number', 'alternate_number', 'address',
+                  'vehicle_type', 'status', 'vehicle_number', 'capacity', 'location_status']
 
     def validate_vehicle_number(self, value):
         """
@@ -178,6 +201,16 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.error(f"Error in updating vehicle: {e}")
 
+
+    def validate(self, attrs):
+    # Validate location_status if provided
+        if 'location_status' in attrs:
+            if attrs['location_status'] not in VehicleInfo.LocationStatusChoices.values:
+                raise serializers.ValidationError({
+                    'location_status': f"Invalid status. Choices are: {dict(VehicleInfo.LocationStatusChoices.choices)}"
+                })
+        return attrs
+
     def update(self, instance, validated_data):
         capacity_data = validated_data.pop('capacity', None)
 
@@ -193,7 +226,10 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
                 instance.status = validated_data['status']
             else:
                 instance.update_status(save_instance=False)
-            
+
+        if 'location_status' in validated_data:
+            instance.location_status = validated_data['location_status']
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
@@ -283,7 +319,8 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
         for img in value:
             # Check file size
             if img.size > MAX_SIZE:
-                raise serializers.ValidationError(f"Image {img.name} size exceeds the 5MB limit.")
+                raise serializers.ValidationError(
+                    f"Image {img.name} size exceeds the 5MB limit.")
             # Check file type
             if not any(img.name.lower().endswith(ext) for ext in valid_extensions):
                 raise serializers.ValidationError(
@@ -310,7 +347,8 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
 
         # Save the image back into a temporary file buffer
         img_io = io.BytesIO()
-        img.save(img_io, format=img_format, quality=85)  # Adjust quality as needed
+        # Adjust quality as needed
+        img.save(img_io, format=img_format, quality=85)
         img_io.seek(0)
 
         # Create a new InMemoryUploadedFile with the compressed image data
@@ -328,7 +366,8 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
         for image in images:
             compressed_image = self.save_image(image)
             vehicle_images.append(
-                VehicleImage(vehicle=vehicle, image=compressed_image, description=description)
+                VehicleImage(vehicle=vehicle, image=compressed_image,
+                             description=description)
             )
 
         # Bulk create all VehicleImage instances
@@ -347,7 +386,8 @@ class VehicleImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VehicleImage
-        fields = ['id', 'vehicle', 'image', 'description']  # Include relevant fields
+        # Include relevant fields
+        fields = ['id', 'vehicle', 'image', 'description']
 
     def create(self, validated_data):
         """Handle image upload and update vehicle status."""
@@ -358,8 +398,9 @@ class VehicleImageSerializer(serializers.ModelSerializer):
         vehicle.update_status()
 
         return vehicle_image
-    
+
 #
+
 
 class DeleteDocumentSerializer(serializers.Serializer):
     """Serializer for deleting multiple VehicleImage instances and associated files using UUIDs."""
@@ -371,7 +412,8 @@ class DeleteDocumentSerializer(serializers.Serializer):
     def validate_image_ids(self, value):
         """Validate that all provided UUIDs correspond to existing VehicleImage instances."""
         if not value:
-            raise serializers.ValidationError("The list of image IDs cannot be empty.")
+            raise serializers.ValidationError(
+                "The list of image IDs cannot be empty.")
 
         # Validate the existence of all images
         invalid_ids = []
