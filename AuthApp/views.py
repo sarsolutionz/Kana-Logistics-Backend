@@ -204,7 +204,12 @@ class UpdateLocationAPI(APIView):
             status = request.data.get("location_status")
 
             if not phone_number or not latitude or not longitude:
-                response["msg"] = "Phone number, latitude and longitude are required."
+                response["msg"] = "Phone number, latitude, and longitude are required."
+                return Response(response)
+
+            valid_statuses = {"ON_LOCATION", "OFF_LOCATION", "IN_TRANSIT"}
+            if status not in valid_statuses:
+                response["msg"] = f"Invalid location_status. Allowed values: {valid_statuses}"
                 return Response(response)
 
             vehicle_info = VehicleInfo.objects.filter(alternate_number=phone_number).first()
@@ -213,18 +218,20 @@ class UpdateLocationAPI(APIView):
                 get_location_response = get_location(latitude, longitude)
                 if not get_location_response:
                     return Response({"status": 500, "msg": "Failed to get location."})
-                
+
                 vehicle_info.address = get_location_response
                 vehicle_info.location_status = status
                 vehicle_info.save()
+
                 response["status"] = 200
                 response["msg"] = "Location updated successfully."
-                
             else:
                 response["status"] = 404
                 response["msg"] = "Vehicle not found."
-        except Exception as e: 
+
+        except Exception as e:
             logger.error(f"Error occurred: {str(e)}", exc_info=True)
             response["status"] = 500
             response["msg"] = "Internal server error."
+
         return Response(response)
