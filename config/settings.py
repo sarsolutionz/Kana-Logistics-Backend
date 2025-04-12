@@ -93,6 +93,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "https://kanalogistics.co",
     "https://www.kanalogistics.co",
+    "http://localhost:3000",
 ]
 
 
