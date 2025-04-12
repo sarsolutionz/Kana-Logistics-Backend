@@ -17,6 +17,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class SignUpAPI(APIView):
     def post(self, request, auth_type, *args, **kwargs):
         data = request.data
@@ -34,35 +35,30 @@ class SignUpAPI(APIView):
             missing_fields.append("number")
 
         if missing_fields:
-            return Response({
-                "status": 400,
-                "msg": f"Missing fields: {', '.join(missing_fields)}"
-            })
+            return Response(
+                {"status": 400, "msg": f"Missing fields: {', '.join(missing_fields)}"}
+            )
 
         # Check for existing email/phone
-        if Driver.objects.filter(Q(email=email) | Q(number=number)).exists() or \
-           VehicleInfo.objects.filter(alternate_number=number).exists():
-            return Response({
-                "status": 400,
-                "msg": "Email or phone number already exists."
-            })
+        if (
+            Driver.objects.filter(Q(email=email) | Q(number=number)).exists()
+            or VehicleInfo.objects.filter(alternate_number=number).exists()
+        ):
+            return Response(
+                {"status": 400, "msg": "Email or phone number already exists."}
+            )
 
         try:
             user = User.objects.create(name=full_name, email=email, is_active=True)
             Driver.objects.get_or_create(name=full_name, email=email, number=number)
             token = get_tokens_for_user(user=user)
 
-            return Response({
-                "status": 200,
-                "token": token
-            })
+            return Response({"status": 200, "token": token})
 
         except Exception as e:
             logger.error("Signup error", exc_info=True)
-            return Response({
-                "status": 500,
-                "msg": "An error occurred during signup."
-            })
+            return Response({"status": 500, "msg": "An error occurred during signup."})
+
 
 class SignOutAPI(APIView):
     permission_classes = (IsAuthenticated,)
@@ -83,6 +79,7 @@ class SignOutAPI(APIView):
             logger.error(error)
         return Response(response)
 
+
 class SendOtpAPI(APIView):
     def post(self, request):
         response = {"status": 400}
@@ -96,7 +93,9 @@ class SendOtpAPI(APIView):
             driver_exists, vehicle_exists = verify_detail(phone_number)
 
             if not driver_exists and not vehicle_exists:
-                return Response({"status": 404, "msg": "This number is not registered."})
+                return Response(
+                    {"status": 404, "msg": "This number is not registered."}
+                )
 
             # Send OTP
             otp_response = send_otp_api(phone_number)
@@ -104,7 +103,9 @@ class SendOtpAPI(APIView):
             if otp_response.get("type") == "success":
                 return Response({"status": 200, "msg": "OTP sent successfully."})
             else:
-                return Response({"status": 500, "msg": "Failed to send OTP. Please try again."})
+                return Response(
+                    {"status": 500, "msg": "Failed to send OTP. Please try again."}
+                )
 
         except Exception as e:
             error = f"\nType: {type(e).__name__}"
@@ -123,13 +124,17 @@ class VerifyOtpAPI(APIView):
             otp = request.data.get("otp")
 
             if not phone_number or not otp:
-                return Response({"status": 400, "msg": "Phone number and OTP are required."})
+                return Response(
+                    {"status": 400, "msg": "Phone number and OTP are required."}
+                )
 
             # Check if the number exists for a driver or a vehicle
             driver_exists, vehicle_exists = verify_detail(phone_number)
 
             if not driver_exists and not vehicle_exists:
-                return Response({"status": 404, "msg": "This number is not registered."})
+                return Response(
+                    {"status": 404, "msg": "This number is not registered."}
+                )
 
             # Verify OTP
             verify_otp_status = verify_otp(phone_number, otp)
@@ -138,10 +143,10 @@ class VerifyOtpAPI(APIView):
                 if driver_exists:
                     user_obj = Driver.objects.get(number=driver_exists)
                     if user_obj:
-                        user = User.objects.filter(
-                            email=user_obj.email).first()
+                        user = User.objects.filter(email=user_obj.email).first()
                         vehicle_exist = VehicleInfo.objects.filter(
-                            alternate_number=user_obj.number).first()
+                            alternate_number=user_obj.number
+                        ).first()
                         if vehicle_exist:
                             document_exist = vehicle_exist.status
 
@@ -179,7 +184,7 @@ class VerifyOtpAPI(APIView):
 
 class ProfileDocsStatusAPI(APIView):
     def get(self, request):
-        response = {"status": 400}  
+        response = {"status": 400}
 
         try:
             phoneNumber = request.query_params.get("phone")
@@ -221,10 +226,14 @@ class UpdateLocationAPI(APIView):
 
             valid_statuses = {"ON_LOCATION", "OFF_LOCATION", "IN_TRANSIT"}
             if status not in valid_statuses:
-                response["msg"] = f"Invalid location_status. Allowed values: {valid_statuses}"
+                response["msg"] = (
+                    f"Invalid location_status. Allowed values: {valid_statuses}"
+                )
                 return Response(response)
 
-            vehicle_info = VehicleInfo.objects.filter(alternate_number=phone_number).first()
+            vehicle_info = VehicleInfo.objects.filter(
+                alternate_number=phone_number
+            ).first()
 
             if vehicle_info:
                 get_location_response = get_location(latitude, longitude)
