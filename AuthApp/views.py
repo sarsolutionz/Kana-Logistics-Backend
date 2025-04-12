@@ -19,40 +19,50 @@ logger = logging.getLogger(__name__)
 
 class SignUpAPI(APIView):
     def post(self, request, auth_type, *args, **kwargs):
-        response = {"status": 400}
+        data = request.data
+        full_name = data.get("full_name")
+        email = data.get("email")
+        number = data.get("number")
+
+        # Check for missing fields
+        missing_fields = []
+        if not full_name:
+            missing_fields.append("full_name")
+        if not email:
+            missing_fields.append("email")
+        if not number:
+            missing_fields.append("number")
+
+        if missing_fields:
+            return Response({
+                "status": 400,
+                "msg": f"Missing fields: {', '.join(missing_fields)}"
+            })
+
+        # Check for existing email/phone
+        if Driver.objects.filter(Q(email=email) | Q(number=number)).exists() or \
+           VehicleInfo.objects.filter(alternate_number=number).exists():
+            return Response({
+                "status": 400,
+                "msg": "Email or phone number already exists."
+            })
+
         try:
-            full_name = request.data.get("full_name")
-            email = request.data.get("email")
-            number = request.data.get("number")
+            user = User.objects.create(name=full_name, email=email, is_active=True)
+            Driver.objects.get_or_create(name=full_name, email=email, number=number)
+            token = get_tokens_for_user(user=user)
 
-            # validate required fields
-            if not full_name or not email or not number:
-                response["status"] = 400
-
-            if Driver.objects.filter(Q(email=email) | Q(number=number)).exists():
-                response["status"] = 400
-
-            if VehicleInfo.objects.filter(number=number).exists():
-                response["status"] = 400
-            else:
-                user_obj = User.objects.create(
-                    name=full_name, email=email, is_active=True)
-                Driver.objects.get_or_create(
-                    name=full_name,
-                    email=email,
-                    number=number,
-                )
-                response["status"] = 200
-                token = get_tokens_for_user(user=user_obj)
-                response["token"] = token
+            return Response({
+                "status": 200,
+                "token": token
+            })
 
         except Exception as e:
-            error = f"\nType: {type(e).__name__}"
-            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
-            error += f"\nLine: {e.__traceback__.tb_lineno}"
-            error += f"\nMessage: {str(e)}"
-            logger.error(error)
-        return Response(response)
+            logger.error("Signup error", exc_info=True)
+            return Response({
+                "status": 500,
+                "msg": "An error occurred during signup."
+            })
 
 class SignOutAPI(APIView):
     permission_classes = (IsAuthenticated,)
@@ -155,7 +165,9 @@ class VerifyOtpAPI(APIView):
                 response["status"] = 200
                 response["msg"] = "OTP verified successfully."
                 response["token"] = token
-
+            else:
+                response["status"] = 400
+                response["msg"] = "Invalid OTP."
         except Exception as e:
             error = f"\nType: {type(e).__name__}"
             error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
