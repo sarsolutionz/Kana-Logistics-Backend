@@ -12,6 +12,7 @@ from AdminApp.models import User
 from AdminApp.views import get_tokens_for_user
 
 from MemberApp.models import VehicleInfo, VehicleImage
+from MemberApp.models import VehicleCapacity
 
 import logging
 
@@ -248,6 +249,55 @@ class UpdateLocationAPI(APIView):
                 response["msg"] = "Location updated successfully."
             else:
                 response["status"] = 404
+                response["msg"] = "Vehicle not found."
+
+        except Exception as e:
+            logger.error(f"Error occurred: {str(e)}", exc_info=True)
+            response["status"] = 500
+            response["msg"] = "Internal server error."
+
+        return Response(response)
+
+
+class UserProfile(APIView):
+    def get(self, request):
+        response = {"status": 400}
+        user_phone = request.query_params.get("phone")
+
+        if not user_phone:
+            response["msg"] = "Phone number is required."
+            return Response(response)
+
+        try:
+            # Get the associated vehicle info
+            vehicle_info = VehicleInfo.objects.filter(alternate_number=user_phone).first()
+
+            if vehicle_info:
+                # Get related capacity and driver info
+                capacity = vehicle_info.capacity
+                driver_info = Driver.objects.filter(number=user_phone).first()
+
+                if driver_info and capacity:
+                    response["status"] = 200
+                    response["msg"] = "Driver profile retrieved successfully."
+                    response["data"] = {
+                        "driver_name": driver_info.name,
+                        "driver_email": driver_info.email,
+                        "vehicle_capacity": capacity.capacity,
+                        "owner_number": vehicle_info.number,
+                        "your_number": vehicle_info.alternate_number,
+                        "address": vehicle_info.address,
+                        "vehicle_number": vehicle_info.vehicle_number,
+                        "vehicle_type": vehicle_info.vehicle_type,
+                        "owner_name": vehicle_info.name,
+                        # Uncomment if needed
+                        # "vehicle_image": vehicle_info.image.url if vehicle_info.image else None,
+                    }
+                else:
+                    response["status"] = 400
+                    response["msg"] = "Driver not found."
+            else:
+                response["status"] = 400
                 response["msg"] = "Vehicle not found."
 
         except Exception as e:
