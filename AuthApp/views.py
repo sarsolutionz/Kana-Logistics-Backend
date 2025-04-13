@@ -50,11 +50,20 @@ class SignUpAPI(APIView):
             )
 
         try:
+            # Create user and driver
+            number = number.replace("+91", "").replace(" ", "").replace("-", "")
+            if len(number) != 10:
+                return Response(
+                    {"status": 400, "msg": "Invalid phone number format."}
+                )
+            if not number.isdigit():
+                return Response({"status": 400, "msg": "Phone number must be numeric."})
+            
             user = User.objects.create(name=full_name, email=email, is_active=True)
             Driver.objects.get_or_create(name=full_name, email=email, number=number)
             token = get_tokens_for_user(user=user)
 
-            return Response({"status": 200, "token": token})
+            return Response({"status": 200, "msg": "Registration successfull" , "token": token})
 
         except Exception as e:
             logger.error("Signup error", exc_info=True)
