@@ -51,7 +51,7 @@ class SignUpAPI(APIView):
 
         try:
             # Create user and driver
-            number = number.replace("+91", "").replace(" ", "").replace("-", "")
+            number = number[-10:]  # Ensure only the last 10 digits are used
             if len(number) != 10:
                 return Response(
                     {"status": 400, "msg": "Invalid phone number format."}
