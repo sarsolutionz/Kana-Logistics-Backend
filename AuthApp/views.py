@@ -42,7 +42,7 @@ class SignUpAPI(APIView):
 
         # Check for existing email/phone
         if (
-            Driver.objects.filter(Q(email=email) | Q(number=number)).exists()
+            Driver.objects.filter(Q(email__iexact=email.lower()) | Q(number=number)).exists()
             or VehicleInfo.objects.filter(alternate_number=number).exists()
         ):
             return Response(
@@ -51,7 +51,7 @@ class SignUpAPI(APIView):
 
         try:
             # Create user and driver
-            number = number[-10:]  # Ensure only the last 10 digits are used
+            number = number[-10:]  
             if len(number) != 10:
                 return Response(
                     {"status": 400, "msg": "Invalid phone number format."}
