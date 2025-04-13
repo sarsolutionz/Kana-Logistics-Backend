@@ -42,7 +42,7 @@ class GetAllVehicleInfoAPI(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            vehicles = VehicleInfo.objects.all()
+            vehicles = VehicleInfo.objects.all().order_by('id')
             for vehicle in vehicles:
                 vehicle.update_status()
             serializer = GetAllVehicleInfoSerializer(vehicles, many=True)
