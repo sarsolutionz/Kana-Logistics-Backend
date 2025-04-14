@@ -42,7 +42,9 @@ class SignUpAPI(APIView):
 
         # Check for existing email/phone
         if (
-            Driver.objects.filter(Q(email__iexact=email.lower()) | Q(number=number)).exists()
+            Driver.objects.filter(
+                Q(email__iexact=email.lower()) | Q(number=number)
+            ).exists()
             or VehicleInfo.objects.filter(alternate_number=number).exists()
         ):
             return Response(
@@ -51,19 +53,19 @@ class SignUpAPI(APIView):
 
         try:
             # Create user and driver
-            number = number[-10:]  
+            number = number[-10:]
             if len(number) != 10:
-                return Response(
-                    {"status": 400, "msg": "Invalid phone number format."}
-                )
+                return Response({"status": 400, "msg": "Invalid phone number format."})
             if not number.isdigit():
                 return Response({"status": 400, "msg": "Phone number must be numeric."})
-            
+
             user = User.objects.create(name=full_name, email=email, is_active=True)
             Driver.objects.get_or_create(name=full_name, email=email, number=number)
             token = get_tokens_for_user(user=user)
 
-            return Response({"status": 200, "msg": "Registration successfull" , "token": token})
+            return Response(
+                {"status": 200, "msg": "Registration successfull", "token": token}
+            )
 
         except Exception as e:
             logger.error("Signup error", exc_info=True)
@@ -143,52 +145,55 @@ class VerifyOtpAPI(APIView):
 
             if not driver_exists and not vehicle_exists:
                 return Response(
-                    {"status": 404, "msg": "This number is not registered."}
+                    {"status": 400, "msg": "This number is not registered."}
                 )
 
             # Verify OTP
             verify_otp_status = verify_otp(phone_number, otp)
 
-            if verify_otp_status.get("type") == "success":
-                if driver_exists:
-                    user_obj = Driver.objects.get(number=driver_exists)
-                    if user_obj:
-                        user = User.objects.filter(email=user_obj.email).first()
-                        vehicle_exist = VehicleInfo.objects.filter(
-                            alternate_number=user_obj.number
-                        ).first()
-                        if vehicle_exist:
-                            document_exist = vehicle_exist.status
-
-                        if vehicle_exist:
-                            response["vehicle_id"] = vehicle_exist.id
-                            response["phone"] = vehicle_exist.alternate_number
-                            response["Vehicle"] = True
-                            if document_exist == "COMPLETED":
-                                response["Document"] = True
-                            else:
-                                response["Document"] = False
-                        else:
-                            response["Vehicle"] = False
-                            response["Document"] = False
-
-                elif vehicle_exists:
-                    # TODO: create email field in vehicle info
-                    pass
-
-                token = get_tokens_for_user(user=user)
-                response["status"] = 200
-                response["msg"] = "OTP verified successfully."
-                response["token"] = token
-            else:
-                response["status"] = 400
+            if verify_otp_status.get("type", None) != "success":
                 response["msg"] = "Invalid OTP."
+                return Response(response)
+
+            user = None
+            response.update({"Vehicle": False, "Document": False})
+
+            if driver_exists:
+                user_obj = Driver.objects.get(number=driver_exists)
+                user = User.objects.filter(email=user_obj.email).first()
+
+                vehicle = VehicleInfo.objects.filter(
+                    alternate_number=user_obj.number
+                ).first()
+                if vehicle:
+                    response.update(
+                        {
+                            "vehicle_id": vehicle.id,
+                            "phone": vehicle.alternate_number,
+                            "Vehicle": True,
+                            "Document": vehicle.status == "COMPLETED",
+                        }
+                    )
+
+            elif vehicle_exists:
+                # TODO: create email field in vehicle info
+                pass
+
+            if user:
+                token = get_tokens_for_user(user=user)
+                response.update(
+                    {"status": 200, "msg": "OTP verified successfully.", "token": token}
+                )
+
         except Exception as e:
-            error = f"\nType: {type(e).__name__}"
-            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
-            error += f"\nLine: {e.__traceback__.tb_lineno}"
-            error += f"\nMessage: {str(e)}"
+            error = (
+                f"\nType: {type(e).__name__}"
+                f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                f"\nLine: {e.__traceback__.tb_lineno}"
+                f"\nMessage: {str(e)}"
+            )
             logger.error(error)
+
         return Response(response)
 
 
@@ -279,7 +284,9 @@ class UserProfile(APIView):
 
         try:
             # Get the associated vehicle info
-            vehicle_info = VehicleInfo.objects.filter(alternate_number=user_phone).first()
+            vehicle_info = VehicleInfo.objects.filter(
+                alternate_number=user_phone
+            ).first()
 
             if vehicle_info:
                 # Get related capacity and driver info

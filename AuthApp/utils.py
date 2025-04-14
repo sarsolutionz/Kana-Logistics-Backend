@@ -31,7 +31,7 @@ def verify_detail(number: str):
         # Check if the phone number exists in Driver and VehicleInfo models
         driver_exists = Driver.objects.filter(Q(number=trimmed_number)).first()
         vehicle_exists = VehicleInfo.objects.filter(
-            Q(number=trimmed_number)).first()
+            Q(alternate_number=trimmed_number)).first()
 
         # Log successful verification
         logger.info(
