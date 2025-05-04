@@ -1,7 +1,8 @@
 from django.urls import path
 from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehicleInfo, UpdateVehicleInfoByID, \
     VehicleCapacityListView, CreateVehicleCapacityView, VehicleImageUploadView, UserVehicleImagesView, \
-    DeleteImagesView
+    DeleteImagesView, VehicleNotificationAPIView, GetByIdVehicleNotification, LocationLockedNotifications, \
+    MarkNotificationRead
 
 urlpatterns = [
     #
@@ -32,4 +33,20 @@ urlpatterns = [
     #
     # delete images urls
     path('delete-images', DeleteImagesView.as_view(), name='delete-images'),
+    #
+    # create driver notifications
+    path('create-notifications/', VehicleNotificationAPIView.as_view(),
+         name='create-notifications'),
+
+    # get all driver notifications
+    path('get-notifications/', GetByIdVehicleNotification.as_view(),
+         name='get-notifications'),
+    #
+    # locked notification
+    path('locked-notifications/', LocationLockedNotifications.as_view(),
+         name='locked-notifications'),
+    #
+    # Mark notification as read
+    path('notifications/mark-read/', MarkNotificationRead.as_view(),
+         name='mark-notification-read'),
 ]

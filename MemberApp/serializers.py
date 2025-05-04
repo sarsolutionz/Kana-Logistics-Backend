@@ -1,7 +1,7 @@
 import re
 import logging
 from rest_framework import serializers
-from .models import VehicleInfo, VehicleCapacity, VehicleImage
+from .models import VehicleInfo, VehicleCapacity, VehicleImage, DriverNotification
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, MinValueValidator
 from PIL import Image
@@ -201,9 +201,8 @@ class UpdateVehicleInfoByIDSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.error(f"Error in updating vehicle: {e}")
 
-
     def validate(self, attrs):
-    # Validate location_status if provided
+        # Validate location_status if provided
         if 'location_status' in attrs:
             if attrs['location_status'] not in VehicleInfo.LocationStatusChoices.values:
                 raise serializers.ValidationError({
@@ -467,3 +466,92 @@ class DeleteDocumentSerializer(serializers.Serializer):
             vehicle.update_status()
 
         return deleted_count, errors
+
+
+class VehicleIDField(serializers.IntegerField):
+    def to_internal_value(self, data):
+        try:
+            return int(super().to_internal_value(data))
+        except (ValueError, TypeError):
+            self.fail('invalid')
+
+
+class VehicleNotificationCreateSerializer(serializers.ModelSerializer):
+    vehicle_id = VehicleIDField(write_only=True, required=True)
+
+    class Meta:
+        model = DriverNotification
+        fields = [
+            'vehicle_id', 'source', 'destination', 'rate', 'weight',
+            'date', 'message', 'contact'
+        ]
+        extra_kwargs = {
+            'message': {'required': True},
+        }
+
+
+class BulkVehicleNotificationSerializer(serializers.Serializer):
+    vehicle_ids = serializers.ListField(
+        child=VehicleIDField(min_value=1),
+        required=True
+    )
+    notifications = serializers.ListField(
+        child=serializers.DictField()
+    )
+
+    def validate(self, data):
+        if len(data['notifications']) == 0:
+            raise serializers.ValidationError(
+                "At least one notification must be provided.")
+        return data
+
+class GetVehicleNotificationByIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DriverNotification
+        fields = [
+            'id', 'source', 'destination', 'rate', 'weight',
+            'date', 'message', 'contact', 'is_read', 'created_at', 'updated_at'
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not (instance.is_read and instance.location_read_lock):
+            data.pop('message', None) 
+        return data
+
+class NotificationReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DriverNotification
+        fields = ["is_read"]
+
+    def validate_is_read(self, value):
+        if value:
+            if DriverNotification.objects.filter(
+                source=self.instance.source,
+                destination=self.instance.destination,
+                location_read_lock=True
+            ).exclude(pk=self.instance.pk).exists():
+                raise serializers.ValidationError(
+                    "This notification is already read by another user.")
+            
+            return value
+
+
+class NotificationDetailSerializer(serializers.ModelSerializer):
+    is_readable = serializers.SerializerMethodField()
+    class Meta:
+        model = DriverNotification
+        fields = [
+            'id', 'source', 'destination', 'rate', 'weight',
+            'date', 'message', 'contact', 'is_read', 'created_at',
+            'reserved_by', 'is_reserved', 'is_readable'
+        ]
+        depth = 1
+
+    def get_is_readable(self, obj):
+        # Can be marked read if no notification for this location is already read
+        return not DriverNotification.objects.filter(
+            source=obj.source,
+            destination=obj.destination,
+            location_read_lock=True
+        ).exclude(pk=obj.pk).exists()

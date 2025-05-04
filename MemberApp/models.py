@@ -1,5 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, RegexValidator
+from django.conf import settings
+from datetime import timedelta, timezone
 import uuid
 
 # Create your models here.
@@ -154,3 +156,117 @@ class VehicleImage(models.Model):
         """Override the clean method to add custom validation if needed."""
         # Add any custom validation for the description or image size if required
         pass
+
+
+class DriverNotification(models.Model):
+    """Model to store driver notifications."""
+
+    # UUID as primary key for the notification
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    vehicle = models.ForeignKey(
+        'VehicleInfo',
+        related_name='notifications',
+        on_delete=models.CASCADE
+    )
+    source = models.CharField(max_length=255, blank=True)
+    destination = models.CharField(max_length=255, blank=True)
+    rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        validators=[MinValueValidator(0.01)],  # Ensure rate is positive
+    )
+    weight = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        validators=[MinValueValidator(0.01)],  # Ensure weight is positive
+    )
+    date = models.DateField(blank=True, null=True)
+    message = models.TextField(blank=False)
+    contact = models.CharField(
+        max_length=15,
+        blank=True,
+        validators=[RegexValidator(
+            r'^\+?1?\d{9,15}$',
+            'Enter a valid phone number (e.g., +919876543210)'
+        )],
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    location_read_lock = models.BooleanField(default=False)
+
+    reserved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='driver_notifications',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    reservation_time = models.DateTimeField(null=True, blank=True)
+    # 15 minutes reservation timeout
+    RESERVATION_TIMEOUT = timedelta(minutes=15)
+
+    @property
+    def is_reserved(self):
+        """Check if the notification is reserved."""
+        return self.reserved_by is not None and (
+            self.reservation_time + self.RESERVATION_TIMEOUT > timezone.now()
+        )
+
+    def reserve(self, user):
+        """Reserve the notification for a user."""
+        if not self.is_reserved or self.reserved_by == user:
+            self.is_read = True
+            self.reserved_by = user
+            self.reservation_time = timezone.now()
+            self.save()
+            return True
+        return False
+
+    def unreserve(self):
+        """Unreserve the notification."""
+        if self.is_reserved:
+            self.reserved_by = None
+            self.reservation_time = None
+            self.save()
+            return True
+        return False
+
+    class Meta:
+        verbose_name = 'Driver Notification'
+        verbose_name_plural = 'Driver Notifications'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['source', 'destination', 'location_read_lock'],
+                name='unique_read_per_location',
+                condition=models.Q(location_read_lock=True)
+            )
+        ]
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['vehicle', 'is_read']),
+            models.Index(fields=['date']),
+        ]
+
+    def __str__(self):
+        """Return a string representation of the notification."""
+        return f"Notification ({self.id}) for {self.vehicle}"
+
+    def clean(self):
+        if self.is_read and not self.pk:  # New instance being marked read
+            if DriverNotification.objects.filter(
+                source=self.source,
+                destination=self.destination,
+                location_read_lock=True
+            ).exists():
+                raise ValueError(
+                    "Another notification for this location is already read")
+
+    def save(self, *args, **kwargs):
+        if self.is_read and not self.location_read_lock:
+            self.location_read_lock = True
+        super().save(*args, **kwargs)

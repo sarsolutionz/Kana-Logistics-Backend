@@ -155,8 +155,24 @@ class VerifyOtpAPI(APIView):
                 response["msg"] = "Invalid OTP."
                 return Response(response)
 
+<<<<<<< Updated upstream
             user = None
             response.update({"Vehicle": False, "Document": False})
+=======
+                        if vehicle_exist:
+                            response["status"] = 200
+                            response["msg"] = "OTP verified successfully."
+                            response["vehicle_id"] = vehicle_exist.id
+                            response["phone"] = vehicle_exist.alternate_number
+                            response["Vehicle"] = True
+                            if document_exist == "COMPLETED":
+                                response["Document"] = True
+                            else:
+                                response["Document"] = False
+                        else:
+                            response["Vehicle"] = False
+                            response["Document"] = False
+>>>>>>> Stashed changes
 
             if driver_exists:
                 user_obj = Driver.objects.get(number=driver_exists)

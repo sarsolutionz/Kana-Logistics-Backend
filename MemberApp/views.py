@@ -8,13 +8,17 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from AdminApp.renderers import UserRenderer
 
 from django.db import IntegrityError
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
-from MemberApp.models import VehicleInfo, VehicleCapacity, VehicleImage
+
+from MemberApp.models import VehicleInfo, VehicleCapacity, VehicleImage, DriverNotification
+from django.db.models import Q
+
 
 from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, \
     GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, \
     CreateVehicleCapacitySerializer, CreateDocumentSerializer, DeleteDocumentSerializer, \
-    VehicleImageSerializer
+    VehicleImageSerializer, VehicleNotificationCreateSerializer, BulkVehicleNotificationSerializer, GetVehicleNotificationByIdSerializer, NotificationDetailSerializer, NotificationReadSerializer
 
 import logging
 
@@ -131,10 +135,12 @@ class VehicleImageUploadView(APIView):
     """API View for uploading multiple VehicleImage instances."""
     renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
-    parser_classes = [JSONParser, MultiPartParser]  # Ensure multipart parser is used
+    # Ensure multipart parser is used
+    parser_classes = [JSONParser, MultiPartParser]
 
     def post(self, request, *args, **kwargs):
-        serializer = CreateDocumentSerializer(data=request.data, context={'request': request})
+        serializer = CreateDocumentSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Images uploaded successfully!"}, status=status.HTTP_201_CREATED)
@@ -180,3 +186,193 @@ class DeleteImagesView(APIView):
             response_data["errors"] = errors
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+class VehicleNotificationAPIView(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if 'vehicle_ids' in request.data and 'notifications' in request.data:
+            return self.handle_bulk_create(request)
+        return self.handle_single_create(request)
+
+    def handle_single_create(self, request):
+        response = {"status": 400}
+        serializer = VehicleNotificationCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            vehicle_id = serializer.validated_data.pop('vehicle_id')
+            vehicle = VehicleInfo.objects.get(id=vehicle_id)
+
+            notification = DriverNotification.objects.create(
+                vehicle=vehicle,
+                **serializer.validated_data
+            )
+
+            response["status"] = 201
+            response["message"] = "Notification created successfully"
+            response["notification_id"] = str(notification.id)
+            response["vehicle_id"] = str(vehicle_id)
+
+        response["status"] = 400
+        response["message"] = "Invalid data"
+
+    def handle_bulk_create(self, request):
+        response = {"status": 400}
+        try:
+            # Transform data if coming in the {0: {...}, 1: {...}} format
+            if isinstance(request.data.get('notifications'), dict):
+                request.data['notifications'] = list(
+                    request.data['notifications'].values())
+
+            bulk_serializer = BulkVehicleNotificationSerializer(
+                data=request.data)
+            if not bulk_serializer.is_valid():
+                response["status"] = 400
+                response["message"] = "Invalid data"
+
+            vehicle_ids = bulk_serializer.validated_data['vehicle_ids']
+            notifications_data = bulk_serializer.validated_data['notifications']
+
+            created_notifications = []
+            errors = []
+
+            for vehicle_id in vehicle_ids:
+                vehicle = VehicleInfo.objects.get(id=vehicle_id)
+
+                for notification_data in notifications_data:
+                    # Remove vehicle_id from notification data if present
+                    notification_data.pop('vehicle_id', None)
+
+                    notification = DriverNotification.objects.create(
+                        vehicle=vehicle,
+                        **notification_data
+                    )
+                    created_notifications.append({
+                        "id": str(notification.id),
+                        "vehicle_id": str(vehicle_id)
+                    })
+                    response_data = {
+                        "created_count": len(created_notifications),
+                        "created_notifications": created_notifications,
+                        "error_count": len(errors),
+                        "errors": errors
+                    }
+                    status_code = 201 if created_notifications else 400
+                    response["status"] = status_code
+                    response["data"] = response_data
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
+
+
+class GetByIdVehicleNotification(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            vehicle_id = request.query_params.get('vehicle_id', None)
+
+            vehicle = VehicleInfo.objects.get(id=vehicle_id)
+            notifications = DriverNotification.objects.filter(vehicle=vehicle)
+
+            # Apply optional filters
+            is_read = request.query_params.get('is_read')
+            if is_read in ['true', 'false']:
+                notifications = notifications.filter(
+                    is_read=is_read.lower() == 'true')
+
+            # Apply sorting
+            sort = request.query_params.get('sort', 'desc')
+            if sort == 'asc':
+                notifications = notifications.order_by('created_at')
+            else:
+                notifications = notifications.order_by('-created_at')
+
+            # Apply limit
+            limit = request.query_params.get('limit')
+            if limit and limit.isdigit():
+                notifications = notifications[:int(limit)]
+
+            serializer = GetVehicleNotificationByIdSerializer(
+                notifications, many=True)
+
+            response["status"] = 200
+            response["vehicle_number"] = vehicle.vehicle_number
+            response["count"] = notifications.count()
+            response["notifications"] = serializer.data
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
+
+
+class LocationLockedNotifications(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        response = {"status": 400}
+        """
+        Get notifications where:
+        - Either this notification is marked read
+        - OR no notification for this location is marked read yet
+        """
+        try:
+            notifications = DriverNotification.objects.filter(
+                Q(location_read_lock=False) |
+                Q(is_read=True, reserved_by=request.user)
+            ).distinct()
+
+            serializer = NotificationDetailSerializer(notifications, many=True)
+            response["status"] = 200
+            response["data"] = serializer.data
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
+
+
+class MarkNotificationRead(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        response = {"status": 400}
+        """
+        Mark notification as read with location locking
+        """
+        try:
+            notification_id = request.query_params.get('notification_id', None)
+            notification = DriverNotification.objects.get(id=notification_id)
+
+            serializer = NotificationReadSerializer(
+                notification, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                response["status"] = 200
+                response["data"] = NotificationDetailSerializer(
+                    notification).data
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
