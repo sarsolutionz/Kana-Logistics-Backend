@@ -33,3 +33,4 @@ urlpatterns = [
 # Add the following lines to the bottom of the file
 
 if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
