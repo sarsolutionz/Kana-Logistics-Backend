@@ -11,8 +11,7 @@ from AuthApp.utils import send_otp_api, verify_detail, verify_otp, get_location
 from AdminApp.models import User
 from AdminApp.views import get_tokens_for_user
 
-from MemberApp.models import VehicleInfo, VehicleImage
-from MemberApp.models import VehicleCapacity
+from MemberApp.models import VehicleInfo
 
 import logging
 
@@ -155,25 +154,9 @@ class VerifyOtpAPI(APIView):
                 response["msg"] = "Invalid OTP."
                 return Response(response)
 
-<<<<<<< Updated upstream
             user = None
             response.update({"Vehicle": False, "Document": False})
-=======
-                        if vehicle_exist:
-                            response["status"] = 200
-                            response["msg"] = "OTP verified successfully."
-                            response["vehicle_id"] = vehicle_exist.id
-                            response["phone"] = vehicle_exist.alternate_number
-                            response["Vehicle"] = True
-                            if document_exist == "COMPLETED":
-                                response["Document"] = True
-                            else:
-                                response["Document"] = False
-                        else:
-                            response["Vehicle"] = False
-                            response["Document"] = False
->>>>>>> Stashed changes
-
+            
             if driver_exists:
                 user_obj = Driver.objects.get(number=driver_exists)
                 user = User.objects.filter(email=user_obj.email).first()
