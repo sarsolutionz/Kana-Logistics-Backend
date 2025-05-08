@@ -7,6 +7,8 @@ from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeErr
 
 from AdminApp.utils import Util
 
+import re
+
 # Create your serializers here.
 
 
@@ -14,19 +16,26 @@ class SignUpSerializer(serializers.ModelSerializer):
     # We are writing this bcz we need confirm passwd field in our SignUp Request
     password2 = serializers.CharField(
         style={'input_type': 'password'}, write_only=True)
+    number = serializers.CharField(write_only=True, max_length=10, min_length=10)
 
     class Meta:
         model = User
-        fields = ["email", "name", "password", "password2"]
+        fields = ["email", "name", "password", "password2", "number"]
         extra_kwargs = {'password': {'write_only': True}}
 
     # Validation of password & confirm password while SignUp
     def validate(self, attrs):
         password = attrs.get("password")
         password2 = attrs.get("password2")
+        number = attrs.get("number")
         if password != password2:
             raise serializers.ValidationError({
                 'email': 'Passwords do not match. Please try again.'
+            })
+        
+        if not re.match(r'^\d{10}$', number):
+            raise serializers.ValidationError({
+                'number': 'Enter a valid 10-digit phone number.'
             })
 
         return attrs
@@ -46,13 +55,13 @@ class SignInSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "name", "is_active", "is_admin"]
+        fields = ["id", "email", "name", "number", "is_active", "is_admin"]
 
 
 class GetAllProfilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "name", "is_active", "is_admin", "role"]
+        fields = ["id", "email", "name", "number", "is_active", "is_admin", "role"]
 
 
 class UserEditByIdSerializer(serializers.ModelSerializer):
@@ -74,7 +83,7 @@ class UserEditByIdSerializer(serializers.ModelSerializer):
     def validate(self, data):
         requesting_user = self.context['request'].user
         target_user = self.instance
-        
+
         # Check if role is being changed
         if 'role' in data:
             # Admin can set any role (including admin) for any user
@@ -82,43 +91,45 @@ class UserEditByIdSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"role": "Only admin users can change roles."}
                 )
-                
+
             # Additional check if trying to set admin role
             if data['role'] == 'admin' and not requesting_user.is_admin:
                 raise serializers.ValidationError(
                     {"role": "Only superusers can assign admin role."}
                 )
-        
+
         return data
 
     def update(self, instance, validated_data):
         requesting_user = self.context['request'].user
-        
+
         # Auto-set is_admin based on role
         if 'role' in validated_data:
             new_role = validated_data['role']
             validated_data['is_admin'] = (new_role == 'admin')
-            
+
             # If promoting to admin, ensure the requesting user is superuser
             if new_role == 'admin' and not requesting_user.is_admin:
                 raise serializers.ValidationError(
                     {"role": "Only superusers can create admin users."}
                 )
-        
+
         # Admin can activate/deactivate users
         if 'is_active' in validated_data and not requesting_user.is_admin:
             raise serializers.ValidationError(
                 {"is_active": "Only admin users can change activation status."}
             )
-        
+
         return super().update(instance, validated_data)
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id','email','name','is_active','role','is_admin','created_at','updated_at']
-        read_only_fields = ['id','email','created_at','updated_at']
+        fields = ['id', 'email', 'name', 'is_active',
+                  'role', 'is_admin', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'email', 'created_at', 'updated_at']
+
 
 class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=15, min_length=8, style={
