@@ -146,3 +146,7 @@ AdminApp/migrations/00*
 AuthApp/migrations/__init__.py
 MemberApp/migrations/__init__.py
 AdminApp/migrations/__init__.py
+
+# static files #
+/static/
+/staticfiles/
