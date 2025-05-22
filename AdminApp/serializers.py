@@ -16,7 +16,8 @@ class SignUpSerializer(serializers.ModelSerializer):
     # We are writing this bcz we need confirm passwd field in our SignUp Request
     password2 = serializers.CharField(
         style={'input_type': 'password'}, write_only=True)
-    number = serializers.CharField(write_only=True, max_length=10, min_length=10)
+    number = serializers.CharField(
+        write_only=True, max_length=10, min_length=10)
 
     class Meta:
         model = User
@@ -61,13 +62,15 @@ class ProfileSerializer(serializers.ModelSerializer):
 class GetAllProfilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "name", "number", "is_active", "is_admin", "role"]
+        fields = ["id", "email", "name", "number",
+                  "is_active", "is_admin", "is_blocked", "role"]
 
 
 class UserEditByIdSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'is_active', 'role', 'is_admin']
+        fields = ['id', 'email', 'name', 'is_active',
+                  'role', 'is_admin', 'is_blocked']
         extra_kwargs = {
             'email': {'read_only': True},
             'id': {'read_only': True},
@@ -126,8 +129,8 @@ class UserEditByIdSerializer(serializers.ModelSerializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'is_active',
-                  'role', 'is_admin', 'created_at', 'updated_at']
+        fields = ['id', 'email', 'name', 'number', 'is_active',
+                  'role', 'is_admin', 'is_blocked', 'created_at', 'updated_at']
         read_only_fields = ['id', 'email', 'created_at', 'updated_at']
 
 

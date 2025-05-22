@@ -6,7 +6,8 @@ from AuthApp.views import (
     VerifyOtpAPI,
     ProfileDocsStatusAPI,
     UpdateLocationAPI,
-    UserProfile
+    UserProfile,
+    DeleteDriverAPI,
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path("docs-status/", ProfileDocsStatusAPI.as_view(), name="docs_status"),
     path("update-location/", UpdateLocationAPI.as_view(), name="update_location"),
     path("user-profile/", UserProfile.as_view(), name="driver_profile"),
+    path("delete-user", DeleteDriverAPI.as_view(), name="delete_user"),
 ]

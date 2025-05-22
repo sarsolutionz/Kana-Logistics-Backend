@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 
 # Create your models here.
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
@@ -40,6 +41,7 @@ class UserManager(BaseUserManager):
 
 # Custom User Model
 class User(AbstractBaseUser):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     ROLE_CHOICES = [
         ("admin", "Admin"),
         ("staff", "Staff"),
@@ -50,9 +52,11 @@ class User(AbstractBaseUser):
         unique=True,
     )
     name = models.CharField(max_length=200)
-    number = models.CharField(max_length=15, unique=True, null=True, default=None)
+    number = models.CharField(
+        max_length=15, unique=True, null=True, default=None)
     is_active = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
+    is_blocked = models.BooleanField(default=False)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

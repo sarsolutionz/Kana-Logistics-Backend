@@ -376,3 +376,31 @@ class MarkNotificationRead(APIView):
             error += f"\nMessage: {str(e)}"
             logger.error(error)
         return Response(response)
+
+
+class DeleteVehicleById(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            vehicle_id = request.query_params.get('vehicle_id', None)
+            if vehicle_id:
+                # Delete all notifications related to the vehicle
+                DriverNotification.objects.filter(vehicle_id=vehicle_id).delete()
+                # Delete all images/documents related to the vehicle
+                VehicleImage.objects.filter(vehicle_id=vehicle_id).delete()
+                # Delete the vehicle itself
+                vehicle = VehicleInfo.objects.get(id=vehicle_id)
+                vehicle.delete()
+                response["status"] = 200
+                response["message"] = "Vehicle and all related data deleted successfully"
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+
+        return Response(response)

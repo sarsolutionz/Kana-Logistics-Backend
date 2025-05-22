@@ -58,8 +58,10 @@ class SignUpAPI(APIView):
             if not number.isdigit():
                 return Response({"status": 400, "msg": "Phone number must be numeric."})
 
-            user = User.objects.create(name=full_name, email=email, is_active=True)
-            Driver.objects.get_or_create(name=full_name, email=email, number=number)
+            user = User.objects.create(
+                name=full_name, email=email, number=number)
+            Driver.objects.get_or_create(
+                name=full_name, email=email, number=number)
             token = get_tokens_for_user(user=user)
 
             return Response(
@@ -319,5 +321,43 @@ class UserProfile(APIView):
             logger.error(f"Error occurred: {str(e)}", exc_info=True)
             response["status"] = 500
             response["msg"] = "Internal server error."
+
+        return Response(response)
+
+
+class DeleteDriverAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            driver_id = request.query_params.get('driver_id', None)
+            user = User.objects.filter(id=driver_id).first()
+            if user:
+                user.delete()
+
+            driver = Driver.objects.filter(number=user.number).first()
+            if driver:
+                # Check if the driver is associated with any vehicle
+                vehicle_info = VehicleInfo.objects.filter(
+                    alternate_number=driver.number
+                ).first()
+
+                if vehicle_info:
+                    response["status"] = 400
+                    response["msg"] = "Driver cannot be deleted as they are associated with a vehicle."
+                    return Response(response)
+
+            if driver:
+                driver.delete()
+                response["status"] = 200
+                response["msg"] = "Driver deleted successfully."
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
 
         return Response(response)

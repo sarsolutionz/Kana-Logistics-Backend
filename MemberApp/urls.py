@@ -2,7 +2,7 @@ from django.urls import path
 from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehicleInfo, UpdateVehicleInfoByID, \
     VehicleCapacityListView, CreateVehicleCapacityView, VehicleImageUploadView, UserVehicleImagesView, \
     DeleteImagesView, VehicleNotificationAPIView, GetByIdVehicleNotification, LocationLockedNotifications, \
-    MarkNotificationRead
+    MarkNotificationRead, DeleteVehicleById
 
 urlpatterns = [
     #
@@ -49,4 +49,7 @@ urlpatterns = [
     # Mark notification as read
     path('notifications/mark-read/', MarkNotificationRead.as_view(),
          name='mark-notification-read'),
+    #
+    # delete vehicle by id
+    path("delete-vehicle", DeleteVehicleById.as_view(), name="delete-vehicle"),
 ]
