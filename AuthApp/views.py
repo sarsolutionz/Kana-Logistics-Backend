@@ -36,7 +36,8 @@ class SignUpAPI(APIView):
 
         if missing_fields:
             return Response(
-                {"status": 400, "msg": f"Missing fields: {', '.join(missing_fields)}"}
+                {"status": 400,
+                    "msg": f"Missing fields: {', '.join(missing_fields)}"}
             )
 
         # Check for existing email/phone
@@ -59,7 +60,7 @@ class SignUpAPI(APIView):
                 return Response({"status": 400, "msg": "Phone number must be numeric."})
 
             user = User.objects.create(
-                name=full_name, email=email, number=number)
+                name=full_name, email=email, number=number, is_active=True)
             Driver.objects.get_or_create(
                 name=full_name, email=email, number=number)
             token = get_tokens_for_user(user=user)
@@ -158,7 +159,7 @@ class VerifyOtpAPI(APIView):
 
             user = None
             response.update({"Vehicle": False, "Document": False})
-            
+
             if driver_exists:
                 user_obj = Driver.objects.get(number=driver_exists)
                 user = User.objects.filter(email=user_obj.email).first()
@@ -209,7 +210,8 @@ class ProfileDocsStatusAPI(APIView):
                 response["msg"] = "Phone number is required."
                 return Response(response)
 
-            user_info = VehicleInfo.objects.filter(alternate_number=phoneNumber).first()
+            user_info = VehicleInfo.objects.filter(
+                alternate_number=phoneNumber).first()
 
             if user_info:
                 response["status"] = 200
