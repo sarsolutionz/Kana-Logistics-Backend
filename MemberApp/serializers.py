@@ -37,7 +37,7 @@ class CreateVehicleInfoSerializer(serializers.ModelSerializer):
     )
     address = serializers.CharField(max_length=255)
     vehicle_type = serializers.ChoiceField(
-        choices=[('open', 'Open'), ('close', 'Close')])
+        choices=[('open', 'Open'), ('close', 'Close'), ('standard', 'Standard')])
     capacity = serializers.DecimalField(max_digits=4, decimal_places=1)
 
     class Meta:

@@ -28,7 +28,8 @@ class VehicleInfo(models.Model):
     VEHICLE_TYPE_CHOICES = [
         ('', 'Select an option'),  # Placeholder option
         ('open', 'Open'),
-        ('close', 'Close')
+        ('close', 'Close'),
+        ('standard', 'Standard'),
     ]
 
     class StatusChoices(models.TextChoices):
