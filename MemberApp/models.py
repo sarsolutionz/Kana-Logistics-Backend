@@ -29,7 +29,7 @@ class VehicleInfo(models.Model):
         ('', 'Select an option'),  # Placeholder option
         ('open', 'Open'),
         ('close', 'Close'),
-        ('standard', 'Standard'),
+        ('container', 'Container'),
     ]
 
     class StatusChoices(models.TextChoices):
