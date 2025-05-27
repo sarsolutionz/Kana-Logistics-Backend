@@ -14,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from MemberApp.models import VehicleInfo, VehicleCapacity, VehicleImage, DriverNotification
 from django.db.models import Q
 
+from uuid import UUID
 
 from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, \
     GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, \
@@ -36,7 +37,7 @@ class CreateVehicleAPI(APIView):
         serializer = CreateVehicleInfoSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         vehicle_info = serializer.save()
-        vehicle_id = vehicle_info.id
+        vehicle_id = str(vehicle_info.id) if isinstance(vehicle_info.id, UUID) else vehicle_info.id
         return Response({"message": "Vehicle information created successfully", "vehicle_id": vehicle_id}, status=status.HTTP_201_CREATED)
 
 
