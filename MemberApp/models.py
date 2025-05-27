@@ -25,6 +25,9 @@ class VehicleCapacity(models.Model):
 
 
 class VehicleInfo(models.Model):
+    # UUID as primary key for the image
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     VEHICLE_TYPE_CHOICES = [
         ('', 'Select an option'),  # Placeholder option
         ('open', 'Open'),

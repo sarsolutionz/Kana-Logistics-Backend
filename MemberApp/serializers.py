@@ -382,6 +382,7 @@ class CreateDocumentSerializer(serializers.ModelSerializer):
 #
 class VehicleImageSerializer(serializers.ModelSerializer):
     """Serializer for VehicleImage instances."""
+    vehicle = serializers.UUIDField()
 
     class Meta:
         model = VehicleImage
@@ -505,6 +506,7 @@ class BulkVehicleNotificationSerializer(serializers.Serializer):
                 "At least one notification must be provided.")
         return data
 
+
 class GetVehicleNotificationByIdSerializer(serializers.ModelSerializer):
     class Meta:
         model = DriverNotification
@@ -516,8 +518,9 @@ class GetVehicleNotificationByIdSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if not (instance.is_read and instance.location_read_lock):
-            data.pop('message', None) 
+            data.pop('message', None)
         return data
+
 
 class NotificationReadSerializer(serializers.ModelSerializer):
     class Meta:
@@ -533,12 +536,13 @@ class NotificationReadSerializer(serializers.ModelSerializer):
             ).exclude(pk=self.instance.pk).exists():
                 raise serializers.ValidationError(
                     "This notification is already read by another user.")
-            
+
             return value
 
 
 class NotificationDetailSerializer(serializers.ModelSerializer):
     is_readable = serializers.SerializerMethodField()
+
     class Meta:
         model = DriverNotification
         fields = [
