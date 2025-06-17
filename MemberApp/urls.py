@@ -2,7 +2,7 @@ from django.urls import path
 from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehicleInfo, UpdateVehicleInfoByID, \
     VehicleCapacityListView, CreateVehicleCapacityView, VehicleImageUploadView, UserVehicleImagesView, \
     DeleteImagesView, VehicleNotificationAPIView, GetByIdVehicleNotification, LocationLockedNotifications, \
-    MarkNotificationRead, DeleteVehicleById
+    MarkNotificationRead, DeleteVehicleById, GetAllNotifications, GetReadNotifications
 
 urlpatterns = [
     #
@@ -52,4 +52,12 @@ urlpatterns = [
     #
     # delete vehicle by id
     path("delete-vehicle", DeleteVehicleById.as_view(), name="delete-vehicle"),
+    #
+    # Get All Notifications
+    path('get-all-notifications/', GetAllNotifications.as_view(),
+         name='get-all-notifications'),
+    #
+    # Get Read Notifications
+    path('get-read-notifications/', GetReadNotifications.as_view(),
+         name='get-read-notifications'),
 ]

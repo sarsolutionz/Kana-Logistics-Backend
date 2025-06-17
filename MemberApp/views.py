@@ -8,10 +8,9 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from AdminApp.renderers import UserRenderer
 
 from django.db import IntegrityError
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 
-from MemberApp.models import VehicleInfo, VehicleCapacity, VehicleImage, DriverNotification
+from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification
 from django.db.models import Q
 
 from uuid import UUID
@@ -19,7 +18,8 @@ from uuid import UUID
 from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, \
     GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, \
     CreateVehicleCapacitySerializer, CreateDocumentSerializer, DeleteDocumentSerializer, \
-    VehicleImageSerializer, VehicleNotificationCreateSerializer, BulkVehicleNotificationSerializer, GetVehicleNotificationByIdSerializer, NotificationDetailSerializer, NotificationReadSerializer
+    VehicleImageSerializer, VehicleNotificationCreateSerializer, BulkVehicleNotificationSerializer, GetVehicleNotificationByIdSerializer, NotificationDetailSerializer, NotificationReadSerializer, \
+    ReadNotificationSerializer
 
 import logging
 
@@ -369,6 +369,13 @@ class MarkNotificationRead(APIView):
                 response["status"] = 200
                 response["data"] = NotificationDetailSerializer(
                     notification).data
+            else:
+                error_data = serializer.errors.get("is_read", {})
+                response["status"] = 400
+                response["vehicle_id"] = str(error_data.get("vehicle_id", ""))
+                response["is_accepted"] = str(error_data.get("is_accepted", ""))
+                response["msg"] = str(error_data.get("msg", "Validation error."))
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             error = f"\nType: {type(e).__name__}"
@@ -404,4 +411,46 @@ class DeleteVehicleById(APIView):
             error += f"\nMessage: {str(e)}"
             logger.error(error)
 
+        return Response(response)
+
+
+class GetAllNotifications(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            notifications = DriverNotification.objects.all()
+            serializer = NotificationDetailSerializer(notifications, many=True)
+            response["status"] = 200
+            response["data"] = serializer.data
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
+
+
+class GetReadNotifications(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            notifications = DriverNotification.objects.filter(is_read=True)
+            serializer = ReadNotificationSerializer(notifications, many=True)
+            response["status"] = 200
+            response["data"] = serializer.data
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
         return Response(response)

@@ -512,7 +512,7 @@ class GetVehicleNotificationByIdSerializer(serializers.ModelSerializer):
         model = DriverNotification
         fields = [
             'id', 'source', 'destination', 'rate', 'weight',
-            'date', 'message', 'contact', 'is_read', 'created_at', 'updated_at'
+            'date', 'message', 'contact', 'is_read', 'is_accepted', 'created_at', 'updated_at'
         ]
 
     def to_representation(self, instance):
@@ -532,30 +532,47 @@ class NotificationReadSerializer(serializers.ModelSerializer):
             if DriverNotification.objects.filter(
                 source=self.instance.source,
                 destination=self.instance.destination,
-                location_read_lock=True
+                is_read=True,
+                is_accepted=True,
+                location_read_lock=True,
             ).exclude(pk=self.instance.pk).exists():
-                raise serializers.ValidationError(
-                    "This notification is already read by another user.")
+                self.instance.is_accepted = True
+                self.instance.save(update_fields=["is_accepted"])
+                raise serializers.ValidationError({
+                    "vehicle_id": self.instance.vehicle.id,
+                    "is_accepted": self.instance.is_accepted,
+                    "msg": "This notification is already read by another user."})
 
             return value
 
+class VehicleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VehicleInfo
+        fields = "__all__"
 
 class NotificationDetailSerializer(serializers.ModelSerializer):
-    is_readable = serializers.SerializerMethodField()
-
     class Meta:
         model = DriverNotification
         fields = [
             'id', 'source', 'destination', 'rate', 'weight',
-            'date', 'message', 'contact', 'is_read', 'created_at',
-            'reserved_by', 'is_reserved', 'is_readable'
+            'date', 'message', 'contact', 'is_read', 'is_accepted', 'created_at',
+            'reserved_by', 'is_reserved'
         ]
         depth = 1
 
-    def get_is_readable(self, obj):
-        # Can be marked read if no notification for this location is already read
-        return not DriverNotification.objects.filter(
-            source=obj.source,
-            destination=obj.destination,
-            location_read_lock=True
-        ).exclude(pk=obj.pk).exists()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.is_read:
+            data['vehicle'] = VehicleSerializer(instance.vehicle).data
+        return data
+
+class ReadNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DriverNotification
+        fields = '__all__'
+        depth = 1
+
+    def to_representation(self, instance):
+        if instance.is_read:
+            return super().to_representation(instance)
+        return None

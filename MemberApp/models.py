@@ -198,6 +198,7 @@ class DriverNotification(models.Model):
         )],
     )
     is_read = models.BooleanField(default=False)
+    is_accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -273,4 +274,5 @@ class DriverNotification(models.Model):
     def save(self, *args, **kwargs):
         if self.is_read and not self.location_read_lock:
             self.location_read_lock = True
+            self.is_accepted = True
         super().save(*args, **kwargs)
