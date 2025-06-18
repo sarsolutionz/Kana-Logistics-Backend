@@ -542,6 +542,13 @@ class NotificationReadSerializer(serializers.ModelSerializer):
                     "vehicle_id": self.instance.vehicle.id,
                     "is_accepted": self.instance.is_accepted,
                     "msg": "This notification is already read by another user."})
+            
+            else:
+                DriverNotification.objects.filter(
+                source=self.instance.source,
+                destination=self.instance.destination,
+                is_read=False,
+            ).update(is_accepted=True)
 
             return value
 
