@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "AdminApp",
     "MemberApp.apps.MemberAppConfig",
     "AuthApp",
+    "DashboardApp",
 ]
 
 MIDDLEWARE = [
@@ -257,6 +258,11 @@ LOGGING = {
             "propagate": True,
         },
         "AuthApp": {
+            "handlers": ["applog"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "DashboardApp": {
             "handlers": ["applog"],
             "level": "INFO",
             "propagate": True,

@@ -141,11 +141,13 @@ GitHub.sublime-settings
 AuthApp/migrations/00*
 MemberApp/migrations/00*
 AdminApp/migrations/00*
+DashboardApp/migrations/00*
 
 # INI files #
 AuthApp/migrations/__init__.py
 MemberApp/migrations/__init__.py
 AdminApp/migrations/__init__.py
+DashboardApp/migrations/__init__.py
 
 # static files #
 /static/

@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/user/', include('AdminApp.urls')),
     path('api/member/', include('MemberApp.urls')),
     path('api/mobile-auth/', include('AuthApp.urls')),
+    path('api/dashboard/', include('DashboardApp.urls')),
 ]
 
 # Add the following lines to the bottom of the file

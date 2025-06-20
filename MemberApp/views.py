@@ -19,7 +19,7 @@ from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfo
     GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, \
     CreateVehicleCapacitySerializer, CreateDocumentSerializer, DeleteDocumentSerializer, \
     VehicleImageSerializer, VehicleNotificationCreateSerializer, BulkVehicleNotificationSerializer, GetVehicleNotificationByIdSerializer, NotificationDetailSerializer, NotificationReadSerializer, \
-    ReadNotificationSerializer
+    ReadNotificationSerializer, UpdateNotificationByIdSerializer
 
 import logging
 
@@ -324,11 +324,7 @@ class LocationLockedNotifications(APIView):
 
     def get(self, request, *args, **kwargs):
         response = {"status": 400}
-        """
-        Get notifications where:
-        - Either this notification is marked read
-        - OR no notification for this location is marked read yet
-        """
+        
         try:
             notifications = DriverNotification.objects.filter(
                 Q(location_read_lock=False) |
@@ -354,9 +350,7 @@ class MarkNotificationRead(APIView):
 
     def post(self, request, *args, **kwargs):
         response = {"status": 400}
-        """
-        Mark notification as read with location locking
-        """
+
         try:
             notification_id = request.query_params.get('notification_id', None)
             notification = DriverNotification.objects.get(id=notification_id)
@@ -453,4 +447,73 @@ class GetReadNotifications(APIView):
             error += f"\nLine: {e.__traceback__.tb_lineno}"
             error += f"\nMessage: {str(e)}"
             logger.error(error)
+        return Response(response)
+
+class UpdateNotificationById(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        response = {"status": 400}
+
+        try:
+            notification_id = request.query_params.get('notification_id', None)
+            notification = DriverNotification.objects.get(id=notification_id)
+            if not (notification.is_read and notification.is_accepted):
+                response["status"] = 400
+                response["message"] = "notification update only if is_read and is_accepted"
+
+            else:
+                serializer = UpdateNotificationByIdSerializer(notification, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    response["status"] = 200
+                    response["message"] = UpdateNotificationByIdSerializer(notification).data
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
+
+class BulkDeleteNotifications(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        response = {"status": 400}
+
+        try:
+            notification_ids = request.query_params.get('notification_ids', [])
+            if not notification_ids:
+                response["status"] = 400
+                response["message"] = "No notification IDs provided"
+            
+            valid_notifications = []
+            invalid_ids = []
+
+            for notification_id in notification_ids.split(","):
+                try:
+                    notifications = DriverNotification.objects.get(id=notification_id)
+                    valid_notifications.append(notifications)
+                except (ValueError, DriverNotification.DoesNotExist):
+                    invalid_ids.append(notification_id)
+            if invalid_ids:
+                response["status"] = 400
+                response["message"] = "Notification IDs are invalid"
+
+            if valid_notifications:
+                for notification in valid_notifications:
+                    notification.delete()
+                    response["status"] = 200
+                    response["message"] = "Notification deleted successfully"
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
         return Response(response)

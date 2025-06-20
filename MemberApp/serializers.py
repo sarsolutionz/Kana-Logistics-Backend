@@ -583,3 +583,44 @@ class ReadNotificationSerializer(serializers.ModelSerializer):
         if instance.is_read:
             return super().to_representation(instance)
         return None
+
+class UpdateNotificationByIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DriverNotification
+        fields = [
+            "source", 
+            "destination", 
+            "rate", 
+            "weight", 
+            "date", 
+            "message", 
+            "contact", 
+            "is_read", 
+            "is_accepted", 
+            "location_read_lock"
+            ]
+        extra_kwargs = {
+            "source": {"required": False},
+            "destination": {"required": False},
+            "rate": {"required": False},
+            "weight": {"required": False},
+            "message": {"required": False},
+            "contact": {"required": False},
+            "is_read": {"required": False},
+            "is_accepted": {"required": False},
+            "location_read_lock": {"required": False}
+        }
+
+    def update(self, instance, validated_data):
+        is_read = validated_data.get("is_read")
+
+        if is_read is False:
+            instance.is_read = False
+            instance.is_accepted = False
+            instance.location_read_lock = False
+
+        for attr, value in validated_data.items():
+            if attr != "is_read":
+                setattr(instance, attr, value)
+        instance.save()
+        return super().update(instance, validated_data)
