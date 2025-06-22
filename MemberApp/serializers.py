@@ -472,9 +472,12 @@ class DeleteDocumentSerializer(serializers.Serializer):
 class VehicleIDField(serializers.IntegerField):
     def to_internal_value(self, data):
         try:
-            return int(super().to_internal_value(data))
-        except (ValueError, TypeError):
-            self.fail('invalid')
+            return UUID(str(data))
+        except (ValueError, TypeError, AttributeError):
+            raise serializers.ValidationError("Invalid vehicle ID format. Must be a valid UUID.")
+        
+    def to_representation(self, value):
+        return str(value)
 
 
 class VehicleNotificationCreateSerializer(serializers.ModelSerializer):
@@ -493,7 +496,7 @@ class VehicleNotificationCreateSerializer(serializers.ModelSerializer):
 
 class BulkVehicleNotificationSerializer(serializers.Serializer):
     vehicle_ids = serializers.ListField(
-        child=VehicleIDField(min_value=1),
+        child=VehicleIDField(),
         required=True
     )
     notifications = serializers.ListField(
