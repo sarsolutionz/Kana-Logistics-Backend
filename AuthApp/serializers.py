@@ -32,4 +32,9 @@ class UpdateDriverInfoSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    
+class DriverDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Driver
+        fields = ['id', "name", "email", "number", "is_deleted", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+        

@@ -13,7 +13,7 @@ from AdminApp.views import get_tokens_for_user
 
 from MemberApp.models import VehicleInfo
 
-from AuthApp.serializers import GetAllDriversInfoSerailizer, UpdateDriverInfoSerializer
+from AuthApp.serializers import GetAllDriversInfoSerailizer, UpdateDriverInfoSerializer, DriverDetailSerializer
 
 import logging
 
@@ -370,7 +370,7 @@ class DeleteDriverAPI(APIView):
 class GetAllDriverInfo(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         response = {"status": 400}
         try:
             driver_info = Driver.objects.all()
@@ -409,6 +409,31 @@ class UpdateDriverById(APIView):
                     response["status"] = 200
                     response["driver"] = serializer.data
             
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
+    
+class GetDriverByIdView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            driver_id = request.query_params.get('driver_id', None)
+            driver = Driver.objects.get(id=driver_id)
+            if not driver:
+                response["status"] = 400
+                response["message"] = "Driver not found"
+            else:
+                serializer = DriverDetailSerializer(driver)
+                data = serializer.data
+                response["status"] = 200
+                response["drivers"] = data
+
         except Exception as e:
             error = f"\nType: {type(e).__name__}"
             error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
