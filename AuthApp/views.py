@@ -13,6 +13,8 @@ from AdminApp.views import get_tokens_for_user
 
 from MemberApp.models import VehicleInfo
 
+from AuthApp.serializers import GetAllDriversInfoSerailizer, UpdateDriverInfoSerializer
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -362,4 +364,55 @@ class DeleteDriverAPI(APIView):
             error += f"\nMessage: {str(e)}"
             logger.error(error)
 
+        return Response(response)
+
+
+class GetAllDriverInfo(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            driver_info = Driver.objects.all()
+            if not driver_info:
+                response["status"] = 400
+                response["message"] = "Driver not found"
+            else:
+                serializer = GetAllDriversInfoSerailizer(driver_info, many=True)
+                data = serializer.data
+                response["status"] = 200
+                response["drivers"] = data
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
+    
+class UpdateDriverById(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        response = {"status": 400}
+        try:
+            driver_id = request.query_params.get('driver_id', None)
+            driver = Driver.objects.filter(id=driver_id).first()
+            if not driver_id:
+                response["status"] = 400
+                response["message"] = "Driver not found"
+            else:
+                serializer = UpdateDriverInfoSerializer(driver, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    response["status"] = 200
+                    response["driver"] = serializer.data
+            
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
         return Response(response)

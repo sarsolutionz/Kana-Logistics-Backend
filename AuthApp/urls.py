@@ -8,6 +8,8 @@ from AuthApp.views import (
     UpdateLocationAPI,
     UserProfile,
     DeleteDriverAPI,
+    GetAllDriverInfo,
+    UpdateDriverById,
 )
 
 urlpatterns = [
@@ -19,4 +21,6 @@ urlpatterns = [
     path("update-location/", UpdateLocationAPI.as_view(), name="update_location"),
     path("user-profile/", UserProfile.as_view(), name="driver_profile"),
     path("delete-user", DeleteDriverAPI.as_view(), name="delete_user"),
+    path("driver-info/", GetAllDriverInfo.as_view(), name="driver-info"),
+    path("update-driver", UpdateDriverById.as_view(), name="update-driver"),
 ]
