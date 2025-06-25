@@ -441,3 +441,45 @@ class GetDriverByIdView(APIView):
             error += f"\nMessage: {str(e)}"
             logger.error(error)
         return Response(response)
+
+class DeleteDriverByIdAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        response = {"status": 400}
+        try:
+            driver_id = request.query_params.get('driver_id', None)
+            driver = Driver.objects.get(id=driver_id)
+            if not driver:
+                response["status"] = 400
+                response["message"] = "Driver not found"
+            user = User.objects.filter(number=driver.number).first()
+            if user:
+                user.delete()
+            else:
+                response["status"] = 400
+                response["message"] = "User not found"
+
+            driver = Driver.objects.filter(number=user.number).first()
+            if driver:
+                # Check if the driver is associated with any vehicle
+                vehicle_info = VehicleInfo.objects.filter(
+                    alternate_number=driver.number
+                ).first()
+
+                if vehicle_info:
+                    response["status"] = 400
+                    response["message"] = "Driver cannot be deleted as they are associated with a vehicle."
+
+            if driver:
+                driver.delete()
+                response["status"] = 200
+                response["message"] = "Driver deleted successfully."
+
+        except Exception as e:
+            error = f"\nType: {type(e).__name__}"
+            error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+            error += f"\nLine: {e.__traceback__.tb_lineno}"
+            error += f"\nMessage: {str(e)}"
+            logger.error(error)
+        return Response(response)
