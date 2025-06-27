@@ -2,6 +2,8 @@ import re
 import logging
 from rest_framework import serializers
 from .models import VehicleInfo, VehicleCapacity, VehicleImage, DriverNotification
+from AdminApp.models import User
+
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, MinValueValidator
 from PIL import Image
@@ -509,13 +511,20 @@ class BulkVehicleNotificationSerializer(serializers.Serializer):
                 "At least one notification must be provided.")
         return data
 
+class UserBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'name', 'number']
 
 class GetVehicleNotificationByIdSerializer(serializers.ModelSerializer):
+    created_by = UserBasicSerializer(read_only=True)
+
     class Meta:
         model = DriverNotification
         fields = [
             'id', 'source', 'destination', 'rate', 'weight',
-            'date', 'message', 'contact', 'is_read', 'is_accepted', 'created_at', 'updated_at'
+            'date', 'message', 'contact', 'is_read', 'is_accepted', 
+            'created_by', 'created_at', 'updated_at'
         ]
 
     def to_representation(self, instance):
@@ -561,14 +570,21 @@ class VehicleSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class NotificationDetailSerializer(serializers.ModelSerializer):
+    created_by = UserBasicSerializer(read_only=True)
+    
     class Meta:
         model = DriverNotification
         fields = [
             'id', 'source', 'destination', 'rate', 'weight',
-            'date', 'message', 'contact', 'is_read', 'is_accepted', 'created_at',
-            'reserved_by', 'is_reserved'
+            'date', 'message', 'contact', 'is_read', 'is_accepted', 
+            'created_by', 'created_at', 'reserved_by', 'is_reserved'
         ]
         depth = 1
+
+    def get_creator_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.name}".strip()
+        return None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -588,6 +604,8 @@ class ReadNotificationSerializer(serializers.ModelSerializer):
         return None
 
 class UpdateNotificationByIdSerializer(serializers.ModelSerializer):
+    created_by = UserBasicSerializer(read_only=True)
+
     class Meta:
         model = DriverNotification
         fields = [
@@ -599,7 +617,8 @@ class UpdateNotificationByIdSerializer(serializers.ModelSerializer):
             "message", 
             "contact", 
             "is_read", 
-            "is_accepted", 
+            "is_accepted",
+            "created_by",
             "location_read_lock"
             ]
         extra_kwargs = {
@@ -611,6 +630,7 @@ class UpdateNotificationByIdSerializer(serializers.ModelSerializer):
             "contact": {"required": False},
             "is_read": {"required": False},
             "is_accepted": {"required": False},
+            "created_by": {"required": False},
             "location_read_lock": {"required": False}
         }
 

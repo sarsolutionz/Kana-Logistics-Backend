@@ -55,7 +55,7 @@ urlpatterns = [
     path("delete-vehicle", DeleteVehicleById.as_view(), name="delete-vehicle"),
     #
     # Get All Notifications
-    path('get-all-notifications/', GetAllNotifications.as_view(),
+    path('get-all-notifications', GetAllNotifications.as_view(),
          name='get-all-notifications'),
     #
     # Get Read Notifications

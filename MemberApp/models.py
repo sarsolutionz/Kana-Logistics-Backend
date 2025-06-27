@@ -1,8 +1,11 @@
+import uuid
 from django.db import models
 from django.core.validators import MinValueValidator, RegexValidator
 from django.conf import settings
 from datetime import timedelta, timezone
-import uuid
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 # Create your models here.
 
@@ -201,9 +204,14 @@ class DriverNotification(models.Model):
     is_accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
     location_read_lock = models.BooleanField(default=False)
-
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_notifications"
+    )
     reserved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='driver_notifications',

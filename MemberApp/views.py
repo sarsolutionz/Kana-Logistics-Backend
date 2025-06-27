@@ -8,10 +8,12 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from AdminApp.renderers import UserRenderer
 
 from django.db import IntegrityError
-
+from datetime import datetime
 
 from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification
 from django.db.models import Q
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 from uuid import UUID
 
@@ -19,7 +21,7 @@ from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfo
     GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, \
     CreateVehicleCapacitySerializer, CreateDocumentSerializer, DeleteDocumentSerializer, \
     VehicleImageSerializer, VehicleNotificationCreateSerializer, BulkVehicleNotificationSerializer, GetVehicleNotificationByIdSerializer, NotificationDetailSerializer, NotificationReadSerializer, \
-    ReadNotificationSerializer, UpdateNotificationByIdSerializer
+    ReadNotificationSerializer, UpdateNotificationByIdSerializer, UserBasicSerializer
 
 import logging
 
@@ -206,6 +208,7 @@ class VehicleNotificationAPIView(APIView):
 
             notification = DriverNotification.objects.create(
                 vehicle=vehicle,
+                created_by=request.user,
                 **serializer.validated_data
             )
 
@@ -246,6 +249,7 @@ class VehicleNotificationAPIView(APIView):
 
                     notification = DriverNotification.objects.create(
                         vehicle=vehicle,
+                        created_by=request.user,
                         **notification_data
                     )
                     created_notifications.append({
@@ -415,10 +419,58 @@ class GetAllNotifications(APIView):
     def get(self, request, *args, **kwargs):
         response = {"status": 400}
         try:
-            notifications = DriverNotification.objects.all()
+            is_read = request.query_params.get("is_read", None)
+            is_accepted = request.query_params.get("is_accepted", None)
+            creator_name = request.query_params.get("username", None)
+            filter_by_date = request.query_params.get("date", None)
+
+            notifications = DriverNotification.objects.select_related('created_by').all()
+
+            # Apply filters
+            if is_read is not None and is_accepted is not None:
+                is_read_bool = is_read.lower() == 'true'
+                is_accepted_bool = is_accepted.lower() == 'true'
+
+                if is_read_bool and is_accepted_bool:
+                    # Read notifications
+                    notifications = notifications.filter(
+                        is_read=True,
+                        is_accepted=True,
+                    )
+
+                elif is_accepted_bool and not is_read_bool:
+                    # Rejected notifications
+                    notifications = notifications.filter(
+                        is_read=False,
+                        is_accepted=True,
+                    )
+
+                elif not is_read_bool and not is_accepted_bool:
+                    # Unread notifications
+                    notifications = notifications.filter(
+                        is_read=False,
+                        is_accepted=False,
+                    )
+            
+            if creator_name:
+                notifications = notifications.filter(
+                    created_by__name=creator_name
+                )
+
+            if filter_by_date:
+                filter_date = datetime.strptime(filter_by_date, "%Y-%m-%d").date()
+                notifications = notifications.filter(
+                    date=filter_date
+                )
+
+            creator_ids = notifications.values_list('created_by', flat=True).distinct()
+            creators = User.objects.filter(id__in=creator_ids)
+
             serializer = NotificationDetailSerializer(notifications, many=True)
+            creator_serializer = UserBasicSerializer(creators, many=True)
             response["status"] = 200
             response["data"] = serializer.data
+            response["creators"] = creator_serializer.data
 
         except Exception as e:
             error = f"\nType: {type(e).__name__}"
