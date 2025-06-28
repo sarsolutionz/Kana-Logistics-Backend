@@ -569,3 +569,29 @@ class BulkDeleteNotifications(APIView):
                 error += f"\nMessage: {str(e)}"
                 logger.error(error)
         return Response(response)
+
+
+class GetNotificationByIdView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        response = {"status": 400}
+
+        try:
+            notification_id = request.query_params.get('notification_id', None)
+            if not notification_id:
+                response["status"] = 400
+                response["message"] = "No notification ID provided"
+            notification = DriverNotification.objects.get(id=notification_id)
+            serializer = NotificationDetailSerializer(notification)
+            if serializer:
+                response["status"] = 200
+                response["notification"] = serializer.data
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)

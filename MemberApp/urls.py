@@ -3,7 +3,7 @@ from MemberApp.views import CreateVehicleAPI, GetAllVehicleInfoAPI, GetByIdVehic
     VehicleCapacityListView, CreateVehicleCapacityView, VehicleImageUploadView, UserVehicleImagesView, \
     DeleteImagesView, VehicleNotificationAPIView, GetByIdVehicleNotification, LocationLockedNotifications, \
     MarkNotificationRead, DeleteVehicleById, GetAllNotifications, GetReadNotifications, UpdateNotificationById, \
-     BulkDeleteNotifications
+     BulkDeleteNotifications, GetNotificationByIdView
 
 urlpatterns = [
     #
@@ -67,4 +67,7 @@ urlpatterns = [
      #
      # Bulk Delete Notifications
      path("notifications/bulk-delete", BulkDeleteNotifications.as_view(), name="bulk-delete-notifications"),
+     #
+     # Get Notification By Id
+     path("get-notification", GetNotificationByIdView.as_view(), name="get-notification"),
 ]

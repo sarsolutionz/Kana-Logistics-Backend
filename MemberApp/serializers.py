@@ -588,6 +588,10 @@ class NotificationDetailSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        if instance.rate:
+            data['rate'] = float(instance.rate)
+        if instance.weight:
+            data['weight'] = float(instance.weight)
         if instance.is_read:
             data['vehicle'] = VehicleSerializer(instance.vehicle).data
         return data
