@@ -56,7 +56,7 @@ class SignInSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "name", "number", "is_active", "is_admin", "is_blocked"]
+        fields = ["id", "email", "name", "number", "is_active", "is_admin", "is_blocked", "role"]
 
 
 class GetAllProfilesSerializer(serializers.ModelSerializer):
