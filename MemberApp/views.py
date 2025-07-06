@@ -10,7 +10,8 @@ from AdminApp.renderers import UserRenderer
 from django.db import IntegrityError
 from datetime import datetime
 
-from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification
+from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification, UserFCMDevice, Display
+from services.notification_service import send_push_notification
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 User = get_user_model()
@@ -212,6 +213,26 @@ class VehicleNotificationAPIView(APIView):
                 **serializer.validated_data
             )
 
+            # Send push notification with all details
+            notification_data = {
+                "notification_id": str(notification.id),
+                "vehicle_id": str(vehicle_id),
+                "source": notification.source,
+                "destination": notification.destination,
+                "rate": str(notification.rate),
+                "weight": str(notification.weight),
+                "date": str(notification.date) if notification.date else None,
+                "message": notification.message,
+                "contact": notification.contact,
+            }
+
+            send_push_notification(
+                user=request.user,
+                title=f"New Delivery: {notification.source} to {notification.destination}",
+                body=notification.message,
+                data=notification_data,
+                )
+
             response["status"] = 201
             response["message"] = "Notification created successfully"
             response["notification_id"] = str(notification.id)
@@ -252,6 +273,27 @@ class VehicleNotificationAPIView(APIView):
                         created_by=request.user,
                         **notification_data
                     )
+
+                    # Send push notification with all details
+                    notification_data = {
+                        "notification_id": str(notification.id),
+                        "vehicle_id": str(vehicle_id),
+                        "source": notification.source,
+                        "destination": notification.destination,
+                        "rate": str(notification.rate),
+                        "weight": str(notification.weight),
+                        "date": str(notification.date) if notification.date else None,
+                        "message": notification.message,
+                        "contact": notification.contact,
+                    }
+
+                    send_push_notification(
+                        user=request.user,
+                        title=f"New Delivery: {notification.source} to {notification.destination}",
+                        body=notification.message,
+                        data=notification_data,
+                        )
+            
                     created_notifications.append({
                         "id": str(notification.id),
                         "vehicle_id": str(vehicle_id)
@@ -587,6 +629,118 @@ class GetNotificationByIdView(APIView):
             if serializer:
                 response["status"] = 200
                 response["notification"] = serializer.data
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
+    
+
+class RegisterFCMDeviceView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        response = { "status": 400 }
+
+        try:
+            token = request.query_params.get("token", None)
+            device_id = request.query_params.get("device_id", None)
+
+            if not token:
+                response["status"] = 400
+                response["message"] = "Token is required"
+
+            device, created = UserFCMDevice.objects.update_or_create(
+                registration_id=token,
+                defaults={
+                    "user": request.user if request.user.is_authenticated else None,
+                    "device_id": device_id,
+                    "active": True,
+                }
+            )
+
+            response["status"] = 200
+            response["created"] = created
+            response["device_id"] = device.id
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
+
+class CreateDisplayPermissionsView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        response = { "status": 400 }
+
+        try:
+            role = request.data.get("role", None)
+            items = request.data.get("items", [])
+
+            if role not in ['staff', 'admin']:
+                response["status"] = 400
+                response["message"] = "Role must be either 'staff' or 'admin'"
+
+            if not items:
+                response["status"] = 400
+                response["message"] = "Items list cannot be empty."
+
+            if role == "staff":
+                users = User.objects.filter(role="staff")
+            elif role == "admin":
+                users = User.objects.filter(role="admin")
+
+            for user in users:
+                for item in items:
+                    if not Display.objects.filter(user=user, items=item).exists():
+                        Display.objects.create(user=user, items=item)
+
+            response["status"] = 201
+            response["message"] = f"Permissions assigned to {len(users)} {'staff' if role == 'staff' else 'admin'} users for items: {', '.join(items)}"
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
+    
+class GetDisplayPermissionsView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        response = { "status": 400 }
+
+        try:
+            role = request.query_params.get("role", None)
+
+            if role not in ['staff', 'admin']:
+                response["status"] = 400
+                response["message"] = "Role parameter must be either 'staff' or 'admin'"
+
+            if role == "staff":
+                users = User.objects.filter(role="staff")
+            else:
+                users = User.objects.filter(role="admin")
+
+            roles_and_items = []
+            for user in users:
+                accessible_items = Display.get_user_items(user)
+                roles_and_items.append({
+                    "role": user.role,
+                    "items": accessible_items
+                })
+
+            response["status"] = 200
+            response["data"] = roles_and_items
 
         except Exception as e:
                 error = f"\nType: {type(e).__name__}"

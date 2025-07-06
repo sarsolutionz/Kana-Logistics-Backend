@@ -19,8 +19,6 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-print("BASE_DIR", BASE_DIR)
-
 AUTH_USER_MODEL = "AdminApp.User"
 
 # Quick-start development settings - unsuitable for production
@@ -179,6 +177,22 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
 
 PASSWORD_RESET_TIMEOUT = 900  # 15 min timeout
+
+# Firebase Cloud Messaging
+FCM_SERVER_KEY = config("FCM_SERVER_KEY")
+FCM_CREDENTIALS = {
+    "type": config("FCM_TYPE"),
+    "project_id": config("FCM_PROJECT_ID"),
+    "private_key_id": config("FCM_PRIVATE_KEY_ID"),
+    "private_key": config("FCM_PRIVATE_KEY").replace('\\n', '\n'),
+    "client_email": config("FCM_CLIENT_EMAIL"),
+    "client_id": config("FCM_CLIENT_ID"),
+    "auth_uri": config("FCM_AUTH_URI"),
+    "token_uri": config("FCM_TOKEN_URI"),
+    "auth_provider_x509_cert_url": config("FCM_AUTH_PROVIDER_X509_CERT_URL"),
+    "client_x509_cert_url": config("FCM_CLIENT_X509_CERT_URL"),
+    "universe_domain": config("FCM_UNIVERSE_DOMAIN"),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/

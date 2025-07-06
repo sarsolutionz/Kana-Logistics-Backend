@@ -284,3 +284,75 @@ class DriverNotification(models.Model):
             self.location_read_lock = True
             self.is_accepted = True
         super().save(*args, **kwargs)
+
+
+class UserFCMDevice(models.Model):
+    """Model to store user's FCM device tokens"""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name="fcm_devices"
+        )
+
+    registration_id = models.TextField(unique=True) # FCM Token
+
+    device_id = models.CharField(max_length=255, blank=True, null=True)
+
+    active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "FCM Device"
+        verbose_name_plural = "FCM Devices"
+
+    def __str__(self):
+        return f"{self.user}'s device ({self.device_id})"
+
+class Display(models.Model):
+    DISPLAY_TYPE_CHOICES = [
+        ('', 'Select an option'),  # Placeholder option
+        ('dashboard', 'Dashboard'),
+        ('members', 'Members'),
+        ('teams', 'Teams'),
+        ('partners', 'Partners'),
+        ('profile', 'Profile'),
+        ('account', 'Account'),
+        ('appearance', 'Appearance'),
+        ('notifications', 'Notifications'),
+        ('display', 'Display'),
+    ]
+
+    items = models.CharField(
+        max_length=20,
+        choices=DISPLAY_TYPE_CHOICES,
+        default='',
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Link to the User model
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Display Permissions"
+        verbose_name_plural = "Displays Permissions"
+        unique_together = ("items", "user")
+
+    def __str__(self):
+        return f"{self.user.username}'s display ({self.items})"
+
+    # Utility function to get all the items that a user has access to
+    @classmethod
+    def get_user_items(cls, user: User):
+        return cls.objects.filter(user=user).values_list('items', flat=True)
+    
+    # Utility function to check if a user has access to a specific item
+    @classmethod
+    def has_access(cls, user: User, item: str) -> bool:
+        return cls.objects.filter(user=user, items=item).exists()
+
+    # A method to get all users for a particular item
+    @classmethod
+    def get_users_for_item(cls, item: str):
+        return cls.objects.filter(items=item).values_list('user', flat=True)
+

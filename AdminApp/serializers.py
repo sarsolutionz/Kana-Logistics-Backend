@@ -56,7 +56,7 @@ class SignInSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "name", "number", "is_active", "is_admin"]
+        fields = ["id", "email", "name", "number", "is_active", "is_admin", "is_blocked"]
 
 
 class GetAllProfilesSerializer(serializers.ModelSerializer):
@@ -69,10 +69,10 @@ class GetAllProfilesSerializer(serializers.ModelSerializer):
 class UserEditByIdSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'is_active',
+        fields = ['id', 'email', 'name', 'is_active', 'number',
                   'role', 'is_admin', 'is_blocked']
         extra_kwargs = {
-            'email': {'read_only': True},
+            # 'email': {'read_only': True},
             'id': {'read_only': True},
             # Prevent direct admin status changes
             'is_admin': {'read_only': True}
@@ -100,6 +100,19 @@ class UserEditByIdSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"role": "Only superusers can assign admin role."}
                 )
+            
+        # is_active change restriction
+        if 'is_active' in data:
+            if getattr(target_user, 'is_admin', False) and getattr(target_user, 'role', '') == 'admin':
+                raise serializers.ValidationError({
+                    "is_active": "Cannot update active status for admin users."
+                })
+            
+        if 'role' in data:
+            if getattr(target_user, 'is_admin', True) and getattr(target_user, 'role', '') == 'admin':
+                raise serializers.ValidationError({
+                    "role": "Cannot update role status for admin users."
+                })
 
         return data
 
@@ -137,17 +150,25 @@ class UserDetailSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=15, min_length=8, style={
                                      'input_type': 'password'}, write_only=True)
-    password2 = serializers.CharField(max_length=15, min_length=8, style={
+    confirm = serializers.CharField(max_length=15, min_length=8, style={
+        'input_type': 'password'}, write_only=True)
+    
+    current = serializers.CharField(max_length=15, min_length=8, style={
         'input_type': 'password'}, write_only=True)
 
     class Meta:
-        fields = ["password", "password2"]
+        fields = ["password", "confirm", "current"]
 
     def validate(self, attrs):
+        current = attrs.get("current")
         password = attrs.get("password")
-        password2 = attrs.get("password2")
+        confirm = attrs.get("confirm")
         user = self.context.get("user")
-        if password != password2:
+        if not user.check_password(current):
+            raise serializers.ValidationError({
+                'auth_error': 'Current password is incorrect.'
+            })
+        if password != confirm:
             raise serializers.ValidationError({
                 'auth_error': 'Passwords do not match. Please try again.'
             })

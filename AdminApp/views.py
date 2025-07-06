@@ -17,6 +17,9 @@ from AdminApp.serializers import SignUpSerializer, SignInSerializer, ProfileSeri
 
 from .models import BlacklistedAccessToken
 from AdminApp.models import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Creating tokens manually
 
@@ -80,21 +83,23 @@ class GetAllProfiles(APIView):
 
 
 class EditUserById(APIView):
-    renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
+        response = { "status": 400 }
         try:
             user_id = request.query_params.get('user_id', None)
 
             if not user_id:
-                return Response({"detail": "user_id query parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+                response["status"] = 400
+                response["message"] = "Query parameter is required"
 
             user = get_object_or_404(User, pk=user_id)
 
             # Permission check
             if not (request.user.is_admin):
-                return Response({"detail": "You don't have permission to edit this user"}, status=status.HTTP_403_FORBIDDEN)
+                response["status"] = 400
+                response["message"] = "You don't have permission to edit this user"
 
             serializer = UserEditByIdSerializer(
                 user,
@@ -105,12 +110,23 @@ class EditUserById(APIView):
 
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                response["status"] = 200
+                response["data"] = serializer.data
+                response["message"] = "Data successfully saved."
+            else:
+                errors = serializer.errors
+                first_field = next(iter(errors))
+                first_error = errors[first_field][0] if isinstance(errors[first_field], list) else str(errors[first_field])
+                response["status"] = 400
+                response["message"] = first_error
 
         except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
 
 
 class GetUserByIdView(APIView):
@@ -125,15 +141,31 @@ class GetUserByIdView(APIView):
 
 
 class ChangePassword(APIView):
-    renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
-        serializer = ChangePasswordSerializer(
-            data=request.data, context={"user": request.user})
-        serializer.is_valid(raise_exception=True)
-        return Response({"msg": "Password Changed Successfully"}, status=status.HTTP_200_OK)
+        response = { "status": 400 }
+        try:
+            serializer = ChangePasswordSerializer(
+                data=request.data, context={"user": request.user})
+            if not serializer.is_valid():
+                errors = serializer.errors
+                first_field = next(iter(errors))
+                first_error = errors[first_field][0] if isinstance(errors[first_field], list) else str(errors[first_field])
+                response["status"] = 400
+                response["message"] = first_error
 
+            serializer.is_valid(raise_exception=True)
+            response["status"] = 200
+            response["message"] = "Password Changed Successfully"
+        
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
 
 class PasswordResetEmail(APIView):
     renderer_classes = [UserRenderer]
