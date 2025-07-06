@@ -9,6 +9,7 @@ from AdminApp.renderers import UserRenderer
 
 from django.db import IntegrityError
 from datetime import datetime
+from django.db.models.functions import Lower
 
 from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification, UserFCMDevice, Display
 from services.notification_service import send_push_notification
@@ -693,9 +694,9 @@ class CreateDisplayPermissionsView(APIView):
                 response["message"] = "Items list cannot be empty."
 
             if role == "staff":
-                users = User.objects.filter(role="staff")
+                users = User.objects.annotate(lower_role=Lower('role')).filter(lower_role='staff')
             elif role == "admin":
-                users = User.objects.filter(role="admin")
+                users = User.objects.annotate(lower_role=Lower('role')).filter(lower_role='admin')
 
             for user in users:
                 for item in items:
@@ -727,9 +728,9 @@ class GetDisplayPermissionsView(APIView):
                 response["message"] = "Role parameter must be either 'staff' or 'admin'"
 
             if role == "staff":
-                users = User.objects.filter(role="staff")
+                users = User.objects.annotate(lower_role=Lower('role')).filter(lower_role='staff')
             else:
-                users = User.objects.filter(role="admin")
+                users = User.objects.annotate(lower_role=Lower('role')).filter(lower_role='staff')
 
             roles_and_items = []
             for user in users:
