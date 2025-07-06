@@ -24,7 +24,7 @@ admin.site.site_header = "Kana Logistics SuperAdmin"
 admin.site.index_title = "Kana Logistics"
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
     path('api/user/', include('AdminApp.urls')),
     path('api/member/', include('MemberApp.urls')),
     path('api/mobile-auth/', include('AuthApp.urls')),
