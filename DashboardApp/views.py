@@ -110,6 +110,8 @@ class DashboardAPIView(APIView):
                 "vehicle_model": str(notification.vehicle.model),
                 "driver_number": str(notification.vehicle.alternate_number),
                 "driver_name": str(notification.vehicle.name),
+                "vehicle_number": str(notification.vehicle.vehicle_number),
+                "created_by": str(notification.created_by.name),
                 "source": notification.source,
                 "destination": notification.destination,
                 "rate": float(notification.rate),
