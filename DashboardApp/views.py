@@ -111,7 +111,7 @@ class DashboardAPIView(APIView):
                 "driver_number": str(notification.vehicle.alternate_number),
                 "driver_name": str(notification.vehicle.name),
                 "vehicle_number": str(notification.vehicle.vehicle_number),
-                "created_by": str(notification.created_by.name),
+                "created_by": notification.created_by.name if notification.created_by else "Unknown",
                 "source": notification.source,
                 "destination": notification.destination,
                 "rate": float(notification.rate),
