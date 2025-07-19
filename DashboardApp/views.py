@@ -107,6 +107,9 @@ class DashboardAPIView(APIView):
             notifications_data = [{
                 "id": str(notification.id),
                 "vehicle_id": str(notification.vehicle.id),
+                "vehicle_model": str(notification.vehicle.model),
+                "driver_number": str(notification.vehicle.alternate_number),
+                "driver_name": str(notification.vehicle.name),
                 "source": notification.source,
                 "destination": notification.destination,
                 "rate": float(notification.rate),

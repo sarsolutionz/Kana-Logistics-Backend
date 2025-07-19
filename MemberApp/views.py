@@ -17,6 +17,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 from uuid import UUID
+import uuid
 
 from MemberApp.serializers import CreateVehicleInfoSerializer, GetAllVehicleInfoSerializer, \
     GetByIdVehicleInfoSerializer, UpdateVehicleInfoByIDSerializer, VehicleCapacitySerializer, \
@@ -741,6 +742,64 @@ class GetDisplayPermissionsView(APIView):
 
             response["status"] = 200
             response["data"] = roles_and_items
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
+    
+class VerifyDocumentView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        response = { "status": 400 }
+
+        try:
+            vehicle_id = request.query_params.get("vehicle_id", None)
+            image_ids = request.data.get("image_ids", [])
+
+            if not vehicle_id:
+                response["status"] = 400
+                response["message"] = "User not found"
+            
+            if not image_ids or not isinstance(image_ids, list):
+                response["status"] = 400
+                response["message"] = "Image not found"
+            
+            vehicle_uuid = uuid.UUID(vehicle_id)
+            image_uuids = [uuid.UUID(img_id) for img_id in image_ids]
+
+            vehicle = VehicleInfo.objects.get(id=vehicle_uuid)
+            vehicle_images = VehicleImage.objects.filter(vehicle=vehicle)
+            existing_image_ids = set(vehicle_images.values_list('id', flat=True))
+            provided_image_ids = set(image_uuids)
+
+            # Keep only matching image_ids, delete others
+            valid_image_ids = existing_image_ids.intersection(provided_image_ids)
+            images_to_delete = vehicle_images.exclude(id__in=valid_image_ids)
+            deleted_count = images_to_delete.count()
+            images_to_delete.delete()
+
+            vehicle.update_status()
+
+            if vehicle.images.count() >= 6:
+                vehicle.status = vehicle.StatusChoices.COMPLETED
+                vehicle.save(update_fields=["status"])
+            elif vehicle.images.count() == 0:
+                vehicle.status = vehicle.StatusChoices.IN_COMPLETE
+                vehicle.save(update_fields=["status"])
+            else:
+                vehicle.status = vehicle.StatusChoices.IN_PROGRESS
+                vehicle.save(update_fields=["status"])
+
+            response["status"] = 200
+            response["message"] = "Verification complete"
+            response["kept_image_ids"] = list(valid_image_ids)
+            response["deleted_count"] = deleted_count
+            response["vehicle_status"] = vehicle.status
 
         except Exception as e:
                 error = f"\nType: {type(e).__name__}"

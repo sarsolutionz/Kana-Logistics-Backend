@@ -77,7 +77,7 @@ class GetAllProfiles(APIView):
 
     def get(self, request, format=None):
         current_user_id = request.user.id
-        users = User.objects.all().exclude(id=current_user_id)
+        users = User.objects.exclude(id=current_user_id).exclude(password="")
         serializer = GetAllProfilesSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

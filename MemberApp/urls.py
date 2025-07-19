@@ -22,6 +22,7 @@ from MemberApp.views import (
     RegisterFCMDeviceView,
     CreateDisplayPermissionsView,
     GetDisplayPermissionsView,
+    VerifyDocumentView,
 )
 
 urlpatterns = [
@@ -126,4 +127,7 @@ urlpatterns = [
     #
     # Get Display Permissio
     path("get-display/", GetDisplayPermissionsView.as_view(), name="get-display"),
+    #
+    # Verify Document
+    path("verify-documents", VerifyDocumentView.as_view(), name="verify-document")
 ]
