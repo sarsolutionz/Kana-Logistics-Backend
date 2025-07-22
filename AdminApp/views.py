@@ -13,7 +13,9 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 
 from AdminApp.renderers import UserRenderer
-from AdminApp.serializers import SignUpSerializer, SignInSerializer, ProfileSerializer, ChangePasswordSerializer, PasswordResetEmailSerializer, PasswordResetSerializer, GetAllProfilesSerializer, UserEditByIdSerializer, UserDetailSerializer
+from AdminApp.serializers import SignUpSerializer, SignInSerializer, ProfileSerializer, ChangePasswordSerializer, PasswordResetEmailSerializer, PasswordResetSerializer, GetAllProfilesSerializer, UserEditByIdSerializer, UserDetailSerializer, ProfileEditByIdSerializer
+
+from .permissions import IsProfileOwner
 
 from .models import BlacklistedAccessToken
 from AdminApp.models import User
@@ -80,6 +82,46 @@ class GetAllProfiles(APIView):
         users = User.objects.exclude(id=current_user_id).exclude(password="")
         serializer = GetAllProfilesSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class EditProfileById(APIView):
+    permission_classes = [IsAuthenticated, IsProfileOwner]
+
+    def post(self, request, *args, **kwargs):
+        response = { "status": 400 }
+        try:
+            profile_id = request.query_params.get('profile_id', None)
+            if not profile_id:
+                response["status"] = 400
+                response["message"] = "Query parameter is required"
+
+            user = get_object_or_404(User, pk=profile_id)
+            serializer = ProfileEditByIdSerializer(
+                user,
+                data=request.data,
+                partial=True,
+                context={'request': request}
+            )
+            
+            if serializer.is_valid():
+                serializer.save()
+                response["status"] = 200
+                response["data"] = serializer.data
+                response["message"] = "Data successfully saved."
+            else:
+                errors = serializer.errors
+                first_field = next(iter(errors))
+                first_error = errors[first_field][0] if isinstance(errors[first_field], list) else str(errors[first_field])
+                response["status"] = 400
+                response["message"] = first_error
+
+        except Exception as e:
+                error = f"\nType: {type(e).__name__}"
+                error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+                error += f"\nLine: {e.__traceback__.tb_lineno}"
+                error += f"\nMessage: {str(e)}"
+                logger.error(error)
+        return Response(response)
 
 
 class EditUserById(APIView):

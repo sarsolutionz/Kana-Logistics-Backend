@@ -1,8 +1,9 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import RetrieveAPIView
+from rest_framework.permissions import BasePermission
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 
 from AdminApp.renderers import UserRenderer
@@ -10,7 +11,8 @@ from AdminApp.renderers import UserRenderer
 from django.db import IntegrityError
 from datetime import datetime
 
-from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification, UserFCMDevice, Display
+from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification, UserFCMDevice, Display, RolePermissionConfig
+
 from services.notification_service import send_push_notification
 from django.db.models import Q
 from django.contrib.auth import get_user_model
@@ -32,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
+class IsAdminUser(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == "admin"
 
 class CreateVehicleAPI(APIView):
     renderer_classes = [UserRenderer]
@@ -676,12 +681,16 @@ class RegisterFCMDeviceView(APIView):
         return Response(response)
 
 class CreateDisplayPermissionsView(APIView):
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         response = { "status": 400 }
 
         try:
+            if request.user.role != "admin":
+                response["status"] = 400
+                response["message"] = "Only admin users can perform this action"
+
             role = request.data.get("role", None)
             items = request.data.get("items", [])
 
@@ -693,18 +702,27 @@ class CreateDisplayPermissionsView(APIView):
                 response["status"] = 400
                 response["message"] = "Items list cannot be empty."
 
-            if role == "staff":
-                users = User.objects.filter(role="staff")
-            elif role == "admin":
-                users = User.objects.filter(role="admin")
+            # Get all users of this role
+            users = User.objects.filter(role=role)
+
+            # First remove all existing permissions for this role
+            Display.objects.filter(user__role=role).delete()
 
             for user in users:
                 for item in items:
-                    if not Display.objects.filter(user=user, items=item).exists():
-                        Display.objects.create(user=user, items=item)
+                    Display.objects.get_or_create(user=user, items=item)
+
+            # Also set default permissions for future users
+            role_config, created = RolePermissionConfig.objects.get_or_create(
+                role=role,
+                defaults={'items': items}
+            )
+            if not created:
+                role_config.items = items
+                role_config.save()
 
             response["status"] = 201
-            response["message"] = f"Permissions assigned to {len(users)} {'staff' if role == 'staff' else 'admin'} users for items: {', '.join(items)}"
+            response["message"] = f"Permissions updated for {len(users)} {role} users"
 
         except Exception as e:
                 error = f"\nType: {type(e).__name__}"

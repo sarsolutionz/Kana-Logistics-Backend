@@ -64,7 +64,66 @@ class GetAllProfilesSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "email", "name", "number",
                   "is_active", "is_admin", "is_blocked", "role"]
+        
+class ProfileEditByIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'name', 'is_active', 'number',
+                  'role', 'is_admin', 'is_blocked']
+        extra_kwargs = {
+            # 'email': {'read_only': True},
+            'id': {'read_only': True},
+            # Prevent direct admin status changes
+            'is_admin': {'read_only': True}
+        }
 
+    def validate_email(self, value):
+        if value and User.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value.lower() if value else value
+
+    def validate(self, data):
+        requesting_user = self.context['request'].user
+        target_user = self.instance
+
+        # Check if role is being changed
+        if 'role' in data:
+            # Admin can set any role (including admin) for any user
+            if not requesting_user.is_admin:
+                raise serializers.ValidationError(
+                    {"role": "Only admin users can change roles."}
+                )
+            
+        # is_active change restriction
+        if 'is_active' in data:
+            if getattr(target_user, 'is_admin', False) and getattr(target_user, 'role', '') == 'admin':
+                raise serializers.ValidationError({
+                    "is_active": "Cannot update active status for admin users."
+                })
+            
+        if 'role' in data:
+            if getattr(target_user, 'is_admin', True) and getattr(target_user, 'role', '') == 'admin':
+                raise serializers.ValidationError({
+                    "role": "Cannot update role status for admin users."
+                })
+
+        return data
+
+    def update(self, instance, validated_data):
+        requesting_user = self.context['request'].user
+
+        # Auto-set is_admin based on role
+        if 'role' in validated_data:
+            new_role = validated_data['role']
+            validated_data['is_admin'] = (new_role == 'admin')
+
+            # If promoting to admin, ensure the requesting user is superuser
+            if new_role == 'admin' and not requesting_user.is_admin:
+                raise serializers.ValidationError(
+                    {"role": "Only superusers can create admin users."}
+                )
+
+        return super().update(instance, validated_data)
 
 class UserEditByIdSerializer(serializers.ModelSerializer):
     class Meta:

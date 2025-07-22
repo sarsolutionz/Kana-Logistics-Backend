@@ -356,3 +356,9 @@ class Display(models.Model):
     def get_users_for_item(cls, item: str):
         return cls.objects.filter(items=item).values_list('user', flat=True)
 
+class RolePermissionConfig(models.Model):
+    role = models.CharField(max_length=20, unique=True)
+    items = models.JSONField(default=list)
+
+    def __str__(self):
+        return f"{self.role} permissions"

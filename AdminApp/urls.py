@@ -1,5 +1,5 @@
 from django.urls import path
-from AdminApp.views import UserSignUp, UserSignIn, UserProfile, GetAllProfiles, ChangePassword, PasswordResetEmail, PasswordReset, UserLogout, EditUserById, GetUserByIdView
+from AdminApp.views import UserSignUp, UserSignIn, UserProfile, GetAllProfiles, ChangePassword, PasswordResetEmail, PasswordReset, UserLogout, EditUserById, GetUserByIdView, EditProfileById
 
 urlpatterns = [
     path('SignUp', UserSignUp.as_view(), name="SignUp"),
@@ -7,6 +7,7 @@ urlpatterns = [
     path('logout', UserLogout.as_view(), name="logout"),
     path('profile', UserProfile.as_view(), name="profile"),
     path('get-all-profiles', GetAllProfiles.as_view(), name="profiles"),
+    path('profile-edit', EditProfileById.as_view(), name="profile-edit"),
     path('user-edit', EditUserById.as_view(), name='user-edit'),
     path('get-user', GetUserByIdView.as_view(), name='get-user-by-id'),
     path('changepassword/', ChangePassword.as_view(), name="changepassword"),
