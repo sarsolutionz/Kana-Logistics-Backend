@@ -86,7 +86,7 @@ class GetByIdVehicleInfo(RetrieveAPIView):
 
 class UpdateVehicleInfoByID(APIView):
     renderer_classes = [UserRenderer]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         try:
@@ -182,7 +182,7 @@ class UserVehicleImagesView(APIView):
 class DeleteImagesView(APIView):
     """API View to delete multiple VehicleImage instances along with their media files."""
     renderer_classes = [UserRenderer]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def delete(self, request, *args, **kwargs):
         serializer = DeleteDocumentSerializer(data=request.data)
@@ -433,7 +433,7 @@ class MarkNotificationRead(APIView):
 
 
 class DeleteVehicleById(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         response = {"status": 400}
@@ -551,7 +551,7 @@ class GetReadNotifications(APIView):
 
 class UpdateNotificationById(APIView):
     renderer_classes = [UserRenderer]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         response = {"status": 400}
@@ -580,7 +580,7 @@ class UpdateNotificationById(APIView):
 
 class BulkDeleteNotifications(APIView):
     renderer_classes = [UserRenderer]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         response = {"status": 400}
@@ -687,10 +687,6 @@ class CreateDisplayPermissionsView(APIView):
         response = { "status": 400 }
 
         try:
-            if request.user.role != "admin":
-                response["status"] = 400
-                response["message"] = "Only admin users can perform this action"
-
             role = request.data.get("role", None)
             items = request.data.get("items", [])
 

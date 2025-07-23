@@ -15,6 +15,8 @@ from django.shortcuts import get_object_or_404
 from AdminApp.renderers import UserRenderer
 from AdminApp.serializers import SignUpSerializer, SignInSerializer, ProfileSerializer, ChangePasswordSerializer, PasswordResetEmailSerializer, PasswordResetSerializer, GetAllProfilesSerializer, UserEditByIdSerializer, UserDetailSerializer, ProfileEditByIdSerializer
 
+from MemberApp.views import IsAdminUser
+
 from .permissions import IsProfileOwner
 
 from .models import BlacklistedAccessToken
@@ -125,7 +127,7 @@ class EditProfileById(APIView):
 
 
 class EditUserById(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         response = { "status": 400 }

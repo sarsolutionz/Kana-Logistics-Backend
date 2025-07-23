@@ -12,6 +12,7 @@ from AdminApp.models import User
 from AdminApp.views import get_tokens_for_user
 
 from MemberApp.models import VehicleInfo
+from MemberApp.views import IsAdminUser
 
 from AuthApp.serializers import GetAllDriversInfoSerailizer, UpdateDriverInfoSerializer, DriverDetailSerializer
 
@@ -330,7 +331,7 @@ class UserProfile(APIView):
 
 
 class DeleteDriverAPI(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         response = {"status": 400}
@@ -392,7 +393,7 @@ class GetAllDriverInfo(APIView):
         return Response(response)
     
 class UpdateDriverById(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
         response = {"status": 400}
@@ -443,7 +444,7 @@ class GetDriverByIdView(APIView):
         return Response(response)
 
 class DeleteDriverByIdAPI(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         response = {"status": 400}
