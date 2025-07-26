@@ -212,6 +212,12 @@ class VehicleNotificationAPIView(APIView):
         if serializer.is_valid():
             vehicle_id = serializer.validated_data.pop('vehicle_id')
             vehicle = VehicleInfo.objects.get(id=vehicle_id)
+            user = User.objects.filter(number=vehicle.alternate_number).first()
+            if user:
+                user = user.id
+            else:
+                response["status"] = 400
+                response["message"] = "User not found"
 
             notification = DriverNotification.objects.create(
                 vehicle=vehicle,
@@ -233,7 +239,7 @@ class VehicleNotificationAPIView(APIView):
             }
 
             send_push_notification(
-                user=request.user,
+                user=user,
                 title=f"New Delivery: {notification.source} to {notification.destination}",
                 body=notification.message,
                 data=notification_data,
@@ -269,6 +275,12 @@ class VehicleNotificationAPIView(APIView):
 
             for vehicle_id in vehicle_ids:
                 vehicle = VehicleInfo.objects.get(id=vehicle_id)
+                user = User.objects.filter(number=vehicle.alternate_number).first()
+                if user:
+                    user = user.id
+                else:
+                    response["status"] = 400
+                    response["message"] = "User not found"
 
                 for notification_data in notifications_data:
                     # Remove vehicle_id from notification data if present
@@ -294,7 +306,7 @@ class VehicleNotificationAPIView(APIView):
                     }
 
                     send_push_notification(
-                        user=request.user,
+                        user=user,
                         title=f"New Delivery: {notification.source} to {notification.destination}",
                         body=notification.message,
                         data=notification_data,
