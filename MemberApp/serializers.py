@@ -489,7 +489,7 @@ class VehicleNotificationCreateSerializer(serializers.ModelSerializer):
         model = DriverNotification
         fields = [
             'vehicle_id', 'source', 'destination', 'rate', 'weight',
-            'date', 'message', 'contact'
+            'date', 'message', 'contact', 'model'
         ]
         extra_kwargs = {
             'message': {'required': True},
@@ -523,7 +523,7 @@ class GetVehicleNotificationByIdSerializer(serializers.ModelSerializer):
         model = DriverNotification
         fields = [
             'id', 'source', 'destination', 'rate', 'weight',
-            'date', 'message', 'contact', 'is_read', 'is_accepted', 
+            'date', 'message', 'contact', 'model', 'is_read', 'is_accepted', 
             'created_by', 'created_at', 'updated_at'
         ]
 
@@ -576,7 +576,7 @@ class NotificationDetailSerializer(serializers.ModelSerializer):
         model = DriverNotification
         fields = [
             'id', 'source', 'destination', 'rate', 'weight',
-            'date', 'message', 'contact', 'is_read', 'is_accepted', 
+            'date', 'message', 'contact', 'model', 'is_read', 'is_accepted', 
             'created_by', 'created_at', 'reserved_by', 'is_reserved'
         ]
         depth = 1
@@ -620,6 +620,7 @@ class UpdateNotificationByIdSerializer(serializers.ModelSerializer):
             "date", 
             "message", 
             "contact", 
+            "model",
             "is_read", 
             "is_accepted",
             "created_by",
@@ -632,6 +633,7 @@ class UpdateNotificationByIdSerializer(serializers.ModelSerializer):
             "weight": {"required": False},
             "message": {"required": False},
             "contact": {"required": False},
+            "model": {"required": False},
             "is_read": {"required": False},
             "is_accepted": {"required": False},
             "created_by": {"required": False},

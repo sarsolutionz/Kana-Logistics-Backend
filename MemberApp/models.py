@@ -200,6 +200,7 @@ class DriverNotification(models.Model):
             'Enter a valid phone number (e.g., +919876543210)'
         )],
     )
+    model = models.CharField(max_length=200, blank=True)
     is_read = models.BooleanField(default=False)
     is_accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
