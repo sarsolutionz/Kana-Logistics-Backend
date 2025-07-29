@@ -527,9 +527,13 @@ class GetAllNotifications(APIView):
             creators = User.objects.filter(id__in=creator_ids)
 
             serializer = NotificationDetailSerializer(notifications, many=True)
+            filtered_data = [
+                item for item in serializer.data
+                if not (item.get("is_read") is False and item.get("is_accepted") is True)
+            ]
             creator_serializer = UserBasicSerializer(creators, many=True)
             response["status"] = 200
-            response["data"] = serializer.data
+            response["data"] = filtered_data
             response["creators"] = creator_serializer.data
 
         except Exception as e:
