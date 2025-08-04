@@ -1,16 +1,16 @@
+from datetime import datetime
 from rest_framework import status
+from datetime import timezone as dt_timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied
 
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 
 from AdminApp.renderers import UserRenderer
 from AdminApp.serializers import SignUpSerializer, SignInSerializer, ProfileSerializer, ChangePasswordSerializer, PasswordResetEmailSerializer, PasswordResetSerializer, GetAllProfilesSerializer, UserEditByIdSerializer, UserDetailSerializer, ProfileEditByIdSerializer
@@ -21,6 +21,7 @@ from .permissions import IsProfileOwner
 
 from .models import BlacklistedAccessToken
 from AdminApp.models import User
+import jwt
 import logging
 
 logger = logging.getLogger(__name__)
@@ -250,3 +251,99 @@ class UserLogout(APIView):
             return Response({"msg": "Successfully logged out"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class TokenRefreshView(APIView):
+    def post(self, request):
+        access_token = request.data.get('access_token', request.data.get('access'))
+        refresh_token = request.data.get('refresh_token', request.data.get('refresh'))
+        
+        if not all([access_token, refresh_token]):
+            return Response(
+                {"error": "Both tokens are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 1. Verify tokens
+            access_valid, decoded_access = self._verify_token(access_token)
+            refresh_valid, decoded_refresh = self._verify_token(refresh_token)
+            
+            if not refresh_valid:
+                return Response(
+                    {"error": "Invalid refresh token"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            # 2. Get user from refresh token
+            try:
+                user = User.objects.get(pk=decoded_refresh.get('user_id'))
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "User not found"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            # 3. Handle token refresh
+            if not access_valid:
+                refresh = RefreshToken(refresh_token)
+                new_refresh = RefreshToken.for_user(user)  # Brand new refresh token
+                
+                # # Blacklist old tokens if enabled
+                # if settings.SIMPLE_JWT.get('BLACKLIST_AFTER_ROTATION', False):
+                #     try:
+                #         refresh.blacklist()
+                #     except Exception as e:
+                #         logger.warning(f"Blacklist failed: {e}")
+
+                return Response({
+                    "status": "refreshed",
+                    "access_token": str(new_refresh.access_token),
+                    "refresh_token": str(new_refresh),
+                    "access_expires_in": self._format_timedelta(new_refresh.access_token.lifetime),
+                    "refresh_expires_in": self._format_timedelta(new_refresh.lifetime),
+                    "message": "New token pair generated",
+                })
+            else:
+                # Both tokens still valid
+                return Response({
+                    "status": "valid",
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "access_expires_in": self._format_timedelta(
+                        datetime.fromtimestamp(decoded_access['exp'], dt_timezone.utc) - 
+                        datetime.now(dt_timezone.utc)
+                    ),
+                    "refresh_expires_in": self._format_timedelta(
+                        datetime.fromtimestamp(decoded_refresh['exp'], dt_timezone.utc) - 
+                        datetime.now(dt_timezone.utc)
+                    ),
+                })
+
+        except Exception as e:
+            logger.exception("Token processing failed")
+            return Response(
+                {"error": "Token processing error", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def _verify_token(self, token):
+        """Verify token and return (is_valid, decoded_payload)"""
+        try:
+            decoded = jwt.decode(
+                token,
+                str(settings.SECRET_KEY),
+                algorithms=['HS256'],
+                options={'verify_exp': False}
+            )
+            is_valid = datetime.fromtimestamp(decoded['exp'], dt_timezone.utc) > datetime.now(dt_timezone.utc)
+            return (is_valid, decoded)
+        except jwt.PyJWTError:
+            return (False, None)
+
+    def _format_timedelta(self, td):
+        """Convert timedelta to HH:MM:SS"""
+        total_seconds = int(td.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours}:{minutes:02d}:{seconds:02d}"

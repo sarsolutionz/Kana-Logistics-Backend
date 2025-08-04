@@ -8,6 +8,8 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 
 from AdminApp.renderers import UserRenderer
 
+from googletrans import Translator
+
 from django.db import IntegrityError
 from datetime import datetime
 
@@ -33,6 +35,15 @@ logger = logging.getLogger(__name__)
 
 
 # Create your views here.
+
+def translate_text(text, target_language):
+    translator = Translator()
+    translated_object = translator.translate(text, dest=target_language)
+    if translated_object.text == text and target_language == "hi":
+        translated_object = translator.translate(text, dest="mr")
+        return translated_object.text
+    else:
+        return translated_object.text
 
 class IsAdminUser(BasePermission):
     def has_permission(self, request, view):
@@ -343,6 +354,7 @@ class GetByIdVehicleNotification(APIView):
         response = {"status": 400}
         try:
             vehicle_id = request.query_params.get('vehicle_id', None)
+            lang = request.query_params.get('lang', 'en')
 
             vehicle = VehicleInfo.objects.get(id=vehicle_id)
             notifications = DriverNotification.objects.filter(vehicle=vehicle)
@@ -367,6 +379,18 @@ class GetByIdVehicleNotification(APIView):
 
             serializer = GetVehicleNotificationByIdSerializer(
                 notifications, many=True)
+            
+            if serializer.data:
+                for notification in serializer.data:
+                    print("Before cond", notification)
+                    if 'source' in notification and notification['source']:
+                        notification['source'] = translate_text(notification['source'], target_language=lang)
+
+                    if 'destination' in notification and notification['destination']:
+                        notification['destination'] = translate_text(notification['destination'], target_language=lang)
+
+                    if 'message' in notification and notification['message']:
+                        notification['message'] = translate_text(notification['message'], target_language=lang)
 
             response["status"] = 200
             response["vehicle_number"] = vehicle.vehicle_number
