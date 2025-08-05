@@ -18,6 +18,7 @@ from MemberApp.models import VehicleInfo, VehicleImage, DriverNotification, User
 
 from services.notification_service import send_push_notification
 from django.db.models import Q
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -38,13 +39,17 @@ logger = logging.getLogger(__name__)
 # Create your views here.
 
 async def translate_text(text, target_language):
+    cache_key = f"translation_{target_language}_{hash(text)}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+    
     async with Translator() as translator:
-        translated_object = await translator.translate(text, dest=target_language)
-        if translated_object.text == text and target_language == "hi":
-            translated_object = await translator.translate(text, dest="mr")
-            return translated_object.text
-        else:
-            return translated_object.text
+        translated = await translator.translate(text, dest=target_language)
+        if translated.text == text and target_language == "hi":
+            translated = await translator.translate(text, dest="mr")
+        cache.set(cache_key, translated.text, 60*60*24*30) # Cache for 30 days (in seconds)
+        return translated.text
 
 class IsAdminUser(BasePermission):
     def has_permission(self, request, view):
