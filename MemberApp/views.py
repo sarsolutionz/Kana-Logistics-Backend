@@ -8,6 +8,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 
 from AdminApp.renderers import UserRenderer
 
+import asyncio
 from googletrans import Translator
 
 from django.db import IntegrityError
@@ -36,14 +37,14 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
-def translate_text(text, target_language):
-    translator = Translator()
-    translated_object = translator.translate(text, dest=target_language)
-    if translated_object.text == text and target_language == "hi":
-        translated_object = translator.translate(text, dest="mr")
-        return translated_object.text
-    else:
-        return translated_object.text
+async def translate_text(text, target_language):
+    async with Translator() as translator:
+        translated_object = await translator.translate(text, dest=target_language)
+        if translated_object.text == text and target_language == "hi":
+            translated_object = await translator.translate(text, dest="mr")
+            return translated_object.text
+        else:
+            return translated_object.text
 
 class IsAdminUser(BasePermission):
     def has_permission(self, request, view):
@@ -382,15 +383,14 @@ class GetByIdVehicleNotification(APIView):
             
             if serializer.data:
                 for notification in serializer.data:
-                    print("Before cond", notification)
                     if 'source' in notification and notification['source']:
-                        notification['source'] = translate_text(notification['source'], target_language=lang)
+                        notification['source'] = asyncio.run(translate_text(notification['source'], target_language=lang))
 
                     if 'destination' in notification and notification['destination']:
-                        notification['destination'] = translate_text(notification['destination'], target_language=lang)
+                        notification['destination'] = asyncio.run(translate_text(notification['destination'], target_language=lang))
 
                     if 'message' in notification and notification['message']:
-                        notification['message'] = translate_text(notification['message'], target_language=lang)
+                        notification['message'] = asyncio.run(translate_text(notification['message'], target_language=lang))
 
             response["status"] = 200
             response["vehicle_number"] = vehicle.vehicle_number
