@@ -13,20 +13,21 @@ try:
     initialize_app(cred)
 
 except Exception as e:
-        error = f"\nType: {type(e).__name__}"
-        error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
-        error += f"\nLine: {e.__traceback__.tb_lineno}"
-        error += f"\nMessage: {str(e)}"
-        logger.error(error)
+    error = f"\nType: {type(e).__name__}"
+    error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
+    error += f"\nLine: {e.__traceback__.tb_lineno}"
+    error += f"\nMessage: {str(e)}"
+    logger.error(error)
+
 
 def send_push_notification(user, title, body, data=None):
-    response = { "status": 400 }
+    response = {"status": 400}
 
     try:
         devices = UserFCMDevice.objects.filter(user=user)
         if not devices.exists():
             response["status"] = 400
-            response["message"] = "No active devices found"         
+            response["message"] = "No active devices found"
 
         fcm_tokens = [device.registration_id for device in devices]
 
@@ -38,6 +39,11 @@ def send_push_notification(user, title, body, data=None):
             ),
             data=data or {},
             tokens=fcm_tokens,
+            android=messaging.AndroidConfig(
+                notification=messaging.AndroidNotification(
+                    sound="notification_sound"
+                )
+            )
         )
 
         # Send message
@@ -46,7 +52,7 @@ def send_push_notification(user, title, body, data=None):
         response["status"] = 200
         response["success_count"] = res.success_count
         response["failure_count"] = res.failure_count
-    
+
     except Exception as e:
         error = f"\nType: {type(e).__name__}"
         error += f"\nFile: {e.__traceback__.tb_frame.f_code.co_filename}"
