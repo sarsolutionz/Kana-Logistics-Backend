@@ -41,7 +41,10 @@ def send_push_notification(user, title, body, data=None):
             tokens=fcm_tokens,
             android=messaging.AndroidConfig(
                 notification=messaging.AndroidNotification(
-                    sound="notification_sound"
+                    sound="notification_sound",
+                    channel_id="high_importance_channel", # MUST match channelId in React Native
+                    priority="high",
+                    vibrate_timings=[100, 200, 100] # Vibrate pattern
                 )
             )
         )
