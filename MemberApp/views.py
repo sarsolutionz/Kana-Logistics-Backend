@@ -258,7 +258,7 @@ class VehicleNotificationAPIView(APIView):
             send_push_notification(
                 user=user,
                 title=f"New Delivery: {notification.source} to {notification.destination}",
-                body=notification.message,
+                body=f"Vehicle Type: {vehicle.model}",
                 data=notification_data,
                 )
 
@@ -325,7 +325,7 @@ class VehicleNotificationAPIView(APIView):
                     send_push_notification(
                         user=user,
                         title=f"New Delivery: {notification.source} to {notification.destination}",
-                        body=notification.message,
+                        body=f"Vehicle Type: {vehicle.model}",
                         data=notification_data,
                         )
             
