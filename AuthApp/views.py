@@ -312,6 +312,7 @@ class UserProfile(APIView):
                         "vehicle_number": vehicle_info.vehicle_number,
                         "vehicle_type": vehicle_info.vehicle_type,
                         "owner_name": vehicle_info.name,
+                        "model": vehicle_info.model,
                         # Uncomment if needed
                         # "vehicle_image": vehicle_info.image.url if vehicle_info.image else None,
                     }
