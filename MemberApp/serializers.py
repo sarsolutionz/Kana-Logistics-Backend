@@ -14,6 +14,7 @@ from uuid import UUID
 from django.conf import settings
 from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
+from datetime import timedelta
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -541,9 +542,13 @@ class NotificationReadSerializer(serializers.ModelSerializer):
 
     def validate_is_read(self, value):
         if value:
+            current_time = self.instance.created_at.replace(second=0, microsecond=0)
+
             if DriverNotification.objects.filter(
                 source=self.instance.source,
                 destination=self.instance.destination,
+                created_at__gte=current_time - timedelta(minutes=1),  # 1-minute window
+                created_at__lte=current_time + timedelta(minutes=1),  # 1-minute window
                 is_read=True,
                 is_accepted=True,
                 location_read_lock=True,
@@ -559,6 +564,8 @@ class NotificationReadSerializer(serializers.ModelSerializer):
                 DriverNotification.objects.filter(
                 source=self.instance.source,
                 destination=self.instance.destination,
+                created_at__gte=current_time - timedelta(minutes=1),
+                created_at__lte=current_time + timedelta(minutes=1),
                 is_read=False,
             ).update(is_accepted=True)
 
