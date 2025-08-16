@@ -15,6 +15,7 @@ from django.conf import settings
 from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
 from datetime import timedelta
+from django.db import transaction
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -541,35 +542,46 @@ class NotificationReadSerializer(serializers.ModelSerializer):
         fields = ["is_read"]
 
     def validate_is_read(self, value):
-        if value:
-            current_time = self.instance.created_at.replace(second=0, microsecond=0)
+        if not value:
+            return value
 
-            if DriverNotification.objects.filter(
+        with transaction.atomic():
+            # Lock all notifications with same source/destination and similar timestamp
+            similar_notifications = DriverNotification.objects.select_for_update().filter(
                 source=self.instance.source,
                 destination=self.instance.destination,
-                created_at__gte=current_time - timedelta(minutes=1),  # 1-minute window
-                created_at__lte=current_time + timedelta(minutes=1),  # 1-minute window
+                created_at__gte=self.instance.created_at - timedelta(minutes=1),
+                created_at__lte=self.instance.created_at + timedelta(minutes=1)
+            )
+
+            # Check if any similar notification is already read
+            if similar_notifications.filter(
                 is_read=True,
                 is_accepted=True,
-                location_read_lock=True,
+                location_read_lock=True
             ).exclude(pk=self.instance.pk).exists():
                 self.instance.is_accepted = True
                 self.instance.save(update_fields=["is_accepted"])
                 raise serializers.ValidationError({
                     "vehicle_id": self.instance.vehicle.id,
                     "is_accepted": self.instance.is_accepted,
-                    "msg": "This notification is already read by another user."})
-            
-            else:
-                DriverNotification.objects.filter(
-                source=self.instance.source,
-                destination=self.instance.destination,
-                created_at__gte=current_time - timedelta(minutes=1),
-                created_at__lte=current_time + timedelta(minutes=1),
-                is_read=False,
-            ).update(is_accepted=True)
+                    "msg": "This notification batch is already read by another user."
+                })
 
-            return value
+            # Mark all similar notifications as accepted
+            similar_notifications.filter(is_read=False).update(is_accepted=True)
+
+            # Mark current notification as read
+            self.instance.is_read = True
+            self.instance.is_accepted = True
+            self.instance.location_read_lock = True
+            self.instance.save(update_fields=[
+                'is_read',
+                'is_accepted',
+                'location_read_lock'
+            ])
+
+        return value
 
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:

@@ -255,7 +255,7 @@ class DriverNotification(models.Model):
         verbose_name_plural = 'Driver Notifications'
         constraints = [
             models.UniqueConstraint(
-                fields=['source', 'destination', 'location_read_lock'],
+                fields=['source', 'destination', 'created_at'],
                 name='unique_read_per_location',
                 condition=models.Q(location_read_lock=True)
             )
