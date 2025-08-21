@@ -114,7 +114,9 @@ class SendOtpAPI(APIView):
                     {"status": 404, "msg": "This number is not registered."}
                 )
 
-            if phone_number == "918625998872" or "8625998872":
+            if phone_number == "918625998872" or phone_number == "8625998872":
+                if phone_number.startswith('91') and len(phone_number) == 12:
+                    phone_number = phone_number[2:].strip()
                 user_obj = Driver.objects.get(number=phone_number)
                 user = User.objects.filter(email=user_obj.email).first()
 
